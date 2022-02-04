@@ -5,15 +5,11 @@ TODO: Implement test
 package cmd
 
 import (
-	"context"
-
 	"github.com/uitml/quimby/internal/cli"
+	"github.com/uitml/quimby/internal/k8s"
 	"github.com/uitml/quimby/internal/user"
 
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // listCmd represents the list command
@@ -29,20 +25,7 @@ func newListCmd() *cobra.Command {
 }
 
 func Run(cmd *cobra.Command, args []string) error {
-	// TODO: Client abstraction (this needs to be done for every command).
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{})
-	config, err := kubeconfig.ClientConfig()
-	if err != nil {
-		panic(err)
-	}
-	clientset := kubernetes.NewForConfigOrDie(config)
-
-	namespaceList, err := clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-
+	namespaceList := k8s.GetNamespaceList(k8s.GetClientset())
 	userList := user.PopulateList(namespaceList)
 
 	renderUsers(userList)
