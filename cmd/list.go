@@ -6,11 +6,9 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"text/tabwriter"
 
-	"github.com/uitml/quimby/internal/usertools"
+	"github.com/uitml/quimby/internal/cli"
+	"github.com/uitml/quimby/internal/user"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,21 +43,33 @@ func Run(cmd *cobra.Command, args []string) error {
 		panic(err)
 	}
 
-	userList := usertools.PopulateUserList(namespaceList)
+	userList := user.PopulateList(namespaceList)
 
 	renderUsers(userList)
 
 	return nil
 }
 
-func renderUsers(userList []usertools.SpringfieldUser) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+func renderUsers(userList []user.User) {
+	var rowList [][]string
 
-	fmt.Fprintln(w, "Username\tFull name\tE-mail\tUser type\tStatus")
-	fmt.Fprintln(w, "--------\t---------\t------\t---------\t------")
+	headerList := []string{
+		"Username",
+		"Full name",
+		"E-mail",
+		"User type",
+		"Status",
+	}
 
 	for _, user := range userList {
-		fmt.Fprintln(w, user.Username+"\t"+user.Fullname+"\t"+user.Email+"\t"+user.Usertype+"\t"+user.Status)
+		rowList = append(rowList, []string{
+			user.Username,
+			user.Fullname,
+			user.Email,
+			user.Usertype,
+			user.Status,
+		})
 	}
+
+	cli.RenderTable(headerList, rowList)
 }
