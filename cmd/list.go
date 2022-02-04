@@ -51,8 +51,6 @@ func Run(cmd *cobra.Command, args []string) error {
 }
 
 func renderUsers(userList []user.User) {
-	var rowList [][]string
-
 	headerList := []string{
 		"Username",
 		"Full name",
@@ -61,15 +59,7 @@ func renderUsers(userList []user.User) {
 		"Status",
 	}
 
-	for _, user := range userList {
-		rowList = append(rowList, []string{
-			user.Username,
-			user.Fullname,
-			user.Email,
-			user.Usertype,
-			user.Status,
-		})
-	}
+	userTable := user.ListToTable(userList)
 
-	cli.RenderTable(headerList, rowList)
+	cli.RenderTable(headerList, userTable)
 }

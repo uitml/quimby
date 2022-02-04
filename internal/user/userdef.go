@@ -46,3 +46,19 @@ func PopulateList(namespaceList *corev1.NamespaceList) []User {
 
 	return userList
 }
+
+func ListToTable(userList []User) [][]string {
+	var table [][]string
+
+	for _, user := range userList {
+		table = append(table, []string{
+			user.Username,
+			user.Fullname,
+			user.Email,
+			user.Usertype,
+			user.Status,
+		})
+	}
+
+	return table
+}

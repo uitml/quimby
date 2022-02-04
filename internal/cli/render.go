@@ -23,10 +23,10 @@ func generateHeader(headerList []string) string {
 	return strings.Join(header, "\n")
 }
 
-func formatTable(headerList []string, tableRows [][]string) string {
+func formatTable(headerList []string, table [][]string) string {
 	var formattedRows []string
 
-	for _, row := range tableRows {
+	for _, row := range table {
 		formattedRows = append(formattedRows, formatRow(row))
 	}
 
@@ -35,9 +35,9 @@ func formatTable(headerList []string, tableRows [][]string) string {
 	return strings.Join([]string{generateHeader(headerList), joinedRows}, "\n") + "\n"
 }
 
-func RenderTable(headerList []string, tableRows [][]string) {
+func RenderTable(headerList []string, table [][]string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	defer w.Flush()
 
-	fmt.Fprint(w, formatTable(headerList, tableRows))
+	fmt.Fprint(w, formatTable(headerList, table))
 }
