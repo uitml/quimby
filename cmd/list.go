@@ -35,6 +35,10 @@ func Run(cmd *cobra.Command, args []string) error {
 
 	userList, err := user.PopulateList(client)
 
+	if err != nil {
+		return err
+	}
+
 	renderUsers(userList)
 
 	return nil
@@ -48,8 +52,6 @@ func renderUsers(userList []user.User) {
 		"User type",
 		"Status",
 		"GPU",
-		"|Max",
-		"Used|",
 	}
 
 	userTable := user.ListToTable(userList)

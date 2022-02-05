@@ -72,9 +72,7 @@ func ListToTable(userList []User) [][]string {
 			user.Email,
 			user.Usertype,
 			user.Status,
-			"",
-			"| " + user.ResourceQuota.GPU.Max,
-			"  " + user.ResourceQuota.GPU.Used + " |",
+			user.ResourceQuota.GPU.Used + "/" + user.ResourceQuota.GPU.Max,
 		})
 	}
 
