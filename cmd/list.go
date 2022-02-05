@@ -21,12 +21,19 @@ func newListCmd() *cobra.Command {
 		RunE: Run,
 	}
 
+	//flag = listCmd.Flags().BoolVarP("")
+
 	return listCmd
 }
 
 func Run(cmd *cobra.Command, args []string) error {
-	namespaceList := k8s.GetNamespaceList(k8s.GetClientset())
-	userList := user.PopulateList(namespaceList)
+	client, err := k8s.NewClient()
+
+	if err != nil {
+		return err
+	}
+
+	userList, err := user.PopulateList(client)
 
 	renderUsers(userList)
 
@@ -40,6 +47,9 @@ func renderUsers(userList []user.User) {
 		"E-mail",
 		"User type",
 		"Status",
+		"GPU",
+		"|Max",
+		"Used|",
 	}
 
 	userTable := user.ListToTable(userList)

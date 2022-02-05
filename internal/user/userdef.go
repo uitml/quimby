@@ -5,17 +5,19 @@ This package implements tools and data structures for operating on users.
 package user
 
 import (
+	"github.com/uitml/quimby/internal/k8s"
 	internalvalidate "github.com/uitml/quimby/internal/validate"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 type User struct {
-	Username string
-	Fullname string
-	Email    string
-	Usertype string
-	Status   string
+	Username      string
+	Fullname      string
+	Email         string
+	Usertype      string
+	Status        string
+	ResourceQuota k8s.ResourceQuota
 }
 
 func FromNamespace(namespace corev1.Namespace) User {
@@ -35,16 +37,29 @@ func FromNamespace(namespace corev1.Namespace) User {
 	return usr
 }
 
-func PopulateList(namespaceList *corev1.NamespaceList) []User {
+func PopulateList(c k8s.Client) ([]User, error) {
 	var userList []User
+
+	namespaceList, err := c.GetNamespaceList()
+
+	if err != nil {
+		return nil, err
+	}
 
 	for _, namespace := range namespaceList.Items {
 		if internalvalidate.Username(namespace.Name) {
-			userList = append(userList, FromNamespace(namespace))
+			newUser := FromNamespace(namespace)
+
+			newUser.ResourceQuota, err = c.GetResourceQuota(namespace.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			userList = append(userList, newUser)
 		}
 	}
 
-	return userList
+	return userList, nil
 }
 
 func ListToTable(userList []User) [][]string {
@@ -57,6 +72,9 @@ func ListToTable(userList []User) [][]string {
 			user.Email,
 			user.Usertype,
 			user.Status,
+			"",
+			"| " + user.ResourceQuota.GPU.Max,
+			"  " + user.ResourceQuota.GPU.Used + " |",
 		})
 	}
 
