@@ -12,16 +12,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var listResources bool
+
 // listCmd represents the list command
 func newListCmd() *cobra.Command {
 	var listCmd = &cobra.Command{
 		Use:   "ls",
-		Short: "List all springfield users",
+		Short: "List all Springfield users.",
 
 		RunE: Run,
 	}
 
-	//flag = listCmd.Flags().BoolVarP("")
+	listCmd.Flags().BoolVarP(&listResources, "show-resources", "r", false, "Show resources for all users.")
 
 	return listCmd
 }
@@ -33,7 +35,11 @@ func Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	userList, err := user.PopulateList(client)
+	userList, err := user.PopulateList(client, listResources)
+
+	if err != nil {
+		return err
+	}
 
 	renderUsers(userList)
 
@@ -47,12 +53,13 @@ func renderUsers(userList []user.User) {
 		"E-mail",
 		"User type",
 		"Status",
-		"GPU",
-		"|Max",
-		"Used|",
 	}
 
-	userTable := user.ListToTable(userList)
+	if listResources {
+		headerList = append(headerList, "GPU")
+	}
+
+	userTable := user.ListToTable(userList, listResources)
 
 	cli.RenderTable(headerList, userTable)
 }
