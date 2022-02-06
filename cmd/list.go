@@ -58,18 +58,18 @@ func Run(cmd *cobra.Command, args []string) error {
 }
 
 func renderUsers(userList []user.User, footer [][]string) error {
-	headerList := []string{
-		"Username",
-		"Full name",
-		"E-mail",
-		"User type",
-		"Status",
+	headers := [][]string{
+		{
+			"Username",
+			"Full name",
+			"E-mail",
+			"User type",
+			"Status",
+		},
 	}
 
 	if listResources {
-		headerList = append(headerList, "GPU")
-		headerList = append(headerList, "Mem/GPU")
-		headerList = append(headerList, "Storage")
+		headers[0] = append(headers[0], "GPU", "Mem/GPU", "Storage")
 	}
 
 	userTable, err := user.ListToTable(userList, listResources)
@@ -79,10 +79,10 @@ func renderUsers(userList []user.User, footer [][]string) error {
 	}
 
 	if listResources {
-		userTable = append(userTable, footer...)
+		cli.RenderTable(headers, userTable, footer)
+	} else {
+		cli.RenderTable(headers, userTable)
 	}
-
-	cli.RenderTable(headerList, userTable)
 
 	return nil
 }
@@ -98,17 +98,7 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 		return nil, err
 	}
 
-	footerList := [][]string{
-		{
-			"",
-			"",
-			"",
-			"",
-			"------",
-			"-----",
-			"",
-			"",
-		},
+	footer := [][]string{
 		{
 			"",
 			"",
@@ -121,5 +111,5 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 		},
 	}
 
-	return footerList, nil
+	return footer, nil
 }
