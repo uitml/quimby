@@ -19,7 +19,7 @@ func memoryPerGPU(usr *User) string {
 		panic(err)
 	}
 
-	memoryPerGPU := (memory - 256) / (GPUMax * 1024)
+	memoryPerGPU := memory / (GPUMax * 1024)
 
 	return fmt.Sprint(memoryPerGPU) + "Gi"
 }
