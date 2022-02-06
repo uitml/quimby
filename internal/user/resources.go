@@ -23,3 +23,21 @@ func memoryPerGPU(usr *User) string {
 
 	return fmt.Sprint(memoryPerGPU) + "Gi"
 }
+
+func TotalResourcesUsed(userList []User) (map[string]int, error) {
+	var r = make(map[string]int)
+	var tempGPU int = 0
+	var err error
+
+	r["GPU"] = 0
+
+	for _, usr := range userList {
+		tempGPU, err = strconv.Atoi(usr.ResourceQuota.GPU.Used)
+		if err != nil {
+			return nil, err
+		}
+		r["GPU"] += tempGPU
+	}
+
+	return r, nil
+}

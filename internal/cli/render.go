@@ -39,5 +39,5 @@ func RenderTable(headerList []string, table [][]string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	defer w.Flush()
 
-	fmt.Fprint(w, formatTable(headerList, table))
+	fmt.Fprint(w, formatTable(headerList, table)+"\n")
 }
