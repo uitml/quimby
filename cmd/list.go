@@ -5,6 +5,8 @@ TODO: Implement test
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
 	"github.com/uitml/quimby/internal/user"
@@ -30,6 +32,7 @@ func newListCmd() *cobra.Command {
 
 func Run(cmd *cobra.Command, args []string) error {
 	client, err := k8s.NewClient()
+	var footer [][]string
 
 	if err != nil {
 		return err
@@ -41,12 +44,20 @@ func Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	renderUsers(userList)
+	if listResources {
+		footer, err = makeFooter(userList, client)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	renderUsers(userList, footer)
 
 	return nil
 }
 
-func renderUsers(userList []user.User) {
+func renderUsers(userList []user.User, footer [][]string) {
 	headerList := []string{
 		"Username",
 		"Full name",
@@ -63,5 +74,48 @@ func renderUsers(userList []user.User) {
 
 	userTable := user.ListToTable(userList, listResources)
 
+	if listResources {
+		for _, row := range footer {
+			userTable = append(userTable, row)
+		}
+	}
+
 	cli.RenderTable(headerList, userTable)
+}
+
+func makeFooter(userList []user.User, client k8s.Client) ([][]string, error) {
+	totalGPUs, err := client.GetTotalGPUs()
+	if err != nil {
+		return nil, err
+	}
+
+	resourcesUsed, err := user.TotalResourcesUsed(userList)
+	if err != nil {
+		return nil, err
+	}
+
+	footerList := [][]string{
+		{
+			"",
+			"",
+			"",
+			"",
+			"------",
+			"-----",
+			"",
+			"",
+		},
+		{
+			"",
+			"",
+			"",
+			"",
+			"Total:",
+			fmt.Sprint(resourcesUsed["GPU"]) + "/" + fmt.Sprint(totalGPUs),
+			"",
+			"",
+		},
+	}
+
+	return footerList, nil
 }

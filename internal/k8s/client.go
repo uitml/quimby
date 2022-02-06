@@ -13,6 +13,7 @@ type Client interface {
 	GetNamespaceList() (*corev1.NamespaceList, error)
 	GetResourceQuota(string) (ResourceQuota, error)
 	GetDefaultRequest(string) (ResourceRequest, error)
+	GetTotalGPUs() (int, error)
 }
 
 type K8sClient struct {

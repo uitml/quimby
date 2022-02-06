@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -70,4 +71,25 @@ func (c *K8sClient) GetDefaultRequest(namespace string) (ResourceRequest, error)
 	}
 
 	return rr, nil
+}
+
+func (c *K8sClient) GetTotalGPUs() (int, error) {
+	var totalGPUs int = 0
+
+	nodes, err := c.Clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, node := range nodes.Items {
+		if !node.Spec.Unschedulable {
+			tGPUs, err := strconv.Atoi(fmt.Sprint(node.Status.Capacity["nvidia.com/gpu"].ToUnstructured()))
+			if err != nil {
+				return 0, err
+			}
+			totalGPUs += tGPUs
+		}
+	}
+
+	return totalGPUs, nil
 }
