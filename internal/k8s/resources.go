@@ -26,7 +26,7 @@ type ResourceRequest struct {
 	Memory string
 }
 
-func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
+func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	// Compute
 	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	return rq, nil
 }
 
-func (c *K8sClient) GetDefaultRequest(namespace string) (ResourceRequest, error) {
+func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
 	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceRequest{}, err
@@ -73,7 +73,7 @@ func (c *K8sClient) GetDefaultRequest(namespace string) (ResourceRequest, error)
 	return rr, nil
 }
 
-func (c *K8sClient) GetTotalGPUs() (int, error) {
+func (c *Client) GetTotalGPUs() (int, error) {
 	var totalGPUs int = 0
 
 	nodes, err := c.Clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})

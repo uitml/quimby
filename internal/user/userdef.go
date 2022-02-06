@@ -37,7 +37,7 @@ func FromNamespace(namespace corev1.Namespace) User {
 	return usr
 }
 
-func PopulateList(c k8s.Client, listResources bool) ([]User, error) {
+func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	var userList []User
 
 	namespaceList, err := c.GetNamespaceList()
@@ -65,7 +65,7 @@ func PopulateList(c k8s.Client, listResources bool) ([]User, error) {
 	return userList, nil
 }
 
-func ListToTable(userList []User, listResources bool) [][]string {
+func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	var table [][]string
 
 	for i, usr := range userList {
@@ -79,11 +79,17 @@ func ListToTable(userList []User, listResources bool) [][]string {
 
 		// Only show resources if the user has asked for it
 		if listResources {
+			m, err := memoryPerGPU(&usr)
+
+			if err != nil {
+				return nil, err
+			}
+
 			table[i] = append(table[i], usr.ResourceQuota.GPU.Used+"/"+usr.ResourceQuota.GPU.Max)
-			table[i] = append(table[i], memoryPerGPU(&usr))
+			table[i] = append(table[i], m)
 			table[i] = append(table[i], usr.ResourceQuota.Storage)
 		}
 	}
 
-	return table
+	return table, nil
 }

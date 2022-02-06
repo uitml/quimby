@@ -52,12 +52,12 @@ func Run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	renderUsers(userList, footer)
+	err = renderUsers(userList, footer)
 
-	return nil
+	return err
 }
 
-func renderUsers(userList []user.User, footer [][]string) {
+func renderUsers(userList []user.User, footer [][]string) error {
 	headerList := []string{
 		"Username",
 		"Full name",
@@ -72,18 +72,22 @@ func renderUsers(userList []user.User, footer [][]string) {
 		headerList = append(headerList, "Storage")
 	}
 
-	userTable := user.ListToTable(userList, listResources)
+	userTable, err := user.ListToTable(userList, listResources)
+
+	if err != nil {
+		return err
+	}
 
 	if listResources {
-		for _, row := range footer {
-			userTable = append(userTable, row)
-		}
+		userTable = append(userTable, footer...)
 	}
 
 	cli.RenderTable(headerList, userTable)
+
+	return nil
 }
 
-func makeFooter(userList []user.User, client k8s.Client) ([][]string, error) {
+func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, error) {
 	totalGPUs, err := client.GetTotalGPUs()
 	if err != nil {
 		return nil, err

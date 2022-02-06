@@ -6,22 +6,22 @@ import (
 	"strings"
 )
 
-func memoryPerGPU(usr *User) string {
+func memoryPerGPU(usr *User) (string, error) {
 	memory, err := strconv.Atoi(strings.Trim(usr.ResourceQuota.Memory.Max, "Mi"))
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	GPUMax, err := strconv.Atoi(usr.ResourceQuota.GPU.Max)
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	memoryPerGPU := memory / (GPUMax * 1024)
 
-	return fmt.Sprint(memoryPerGPU) + "Gi"
+	return fmt.Sprint(memoryPerGPU) + "Gi", nil
 }
 
 func TotalResourcesUsed(userList []User) (map[string]int, error) {
