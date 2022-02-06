@@ -57,6 +57,8 @@ func renderUsers(userList []user.User) {
 
 	if listResources {
 		headerList = append(headerList, "GPU")
+		headerList = append(headerList, "Mem/GPU")
+		headerList = append(headerList, "Storage")
 	}
 
 	userTable := user.ListToTable(userList, listResources)

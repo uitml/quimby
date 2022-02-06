@@ -68,16 +68,20 @@ func PopulateList(c k8s.Client, listResources bool) ([]User, error) {
 func ListToTable(userList []User, listResources bool) [][]string {
 	var table [][]string
 
-	for i, user := range userList {
+	for i, usr := range userList {
 		table = append(table, []string{
-			user.Username,
-			user.Fullname,
-			user.Email,
-			user.Usertype,
-			user.Status,
+			usr.Username,
+			usr.Fullname,
+			usr.Email,
+			usr.Usertype,
+			usr.Status,
 		})
+
+		// Only show resources if the user has asked for it
 		if listResources {
-			table[i] = append(table[i], user.ResourceQuota.GPU.Used+"/"+user.ResourceQuota.GPU.Max)
+			table[i] = append(table[i], usr.ResourceQuota.GPU.Used+"/"+usr.ResourceQuota.GPU.Max)
+			table[i] = append(table[i], memoryPerGPU(&usr))
+			table[i] = append(table[i], usr.ResourceQuota.Storage)
 		}
 	}
 

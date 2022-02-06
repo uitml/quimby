@@ -13,9 +13,10 @@ type resourceSummary struct {
 }
 
 type ResourceQuota struct {
-	CPU    resourceSummary
-	GPU    resourceSummary
-	Memory resourceSummary
+	CPU     resourceSummary
+	GPU     resourceSummary
+	Memory  resourceSummary
+	Storage string
 }
 
 type ResourceRequest struct {
@@ -25,8 +26,14 @@ type ResourceRequest struct {
 }
 
 func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
+	// Compute
 	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return ResourceQuota{}, err
+	}
 
+	// Storage
+	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceQuota{}, err
 	}
@@ -44,6 +51,7 @@ func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
 			Max:  fmt.Sprint(res.Items[0].Spec.Hard["requests.memory"].ToUnstructured()),
 			Used: fmt.Sprint(res.Items[0].Status.Used["requests.memory"].ToUnstructured()),
 		},
+		Storage: fmt.Sprint(pvc.Items[0].Spec.Resources.Requests["storage"].ToUnstructured()),
 	}
 
 	return rq, nil
