@@ -26,8 +26,6 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// I am envisioning storing resource allowance needed (e.g. memory per job) as annotations in namespace and
 	// default values for resources in the cluster somehow (annotation on Springfield?).
 	// Then this could be polled and populated in the list for users with default values (empty annotation)
-
-	// TODO: Access #GPUs, storage space and memory
 	usr := User{
 		Username: namespace.Name,
 		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
