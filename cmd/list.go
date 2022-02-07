@@ -52,61 +52,50 @@ func Run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	renderUsers(userList, footer)
+	err = renderUsers(userList, footer)
+
+	return err
+}
+
+func renderUsers(userList []user.User, footer [][]string) error {
+	headers := [][]string{
+		{
+			"Username",
+			"Full name",
+			"E-mail",
+			"User type",
+		},
+	}
+
+	if listResources {
+		headers[0] = append(headers[0], "GPU", "Mem/GPU", "Storage")
+	}
+
+	userTable, err := user.ListToTable(userList, listResources)
+
+	if err != nil {
+		return err
+	}
+
+	if listResources {
+		cli.RenderTable(headers, userTable, footer)
+	} else {
+		cli.RenderTable(headers, userTable)
+	}
 
 	return nil
 }
 
-func renderUsers(userList []user.User, footer [][]string) {
-	headerList := []string{
-		"Username",
-		"Full name",
-		"E-mail",
-		"User type",
-		"Status",
-	}
-
-	if listResources {
-		headerList = append(headerList, "GPU")
-		headerList = append(headerList, "Mem/GPU")
-		headerList = append(headerList, "Storage")
-	}
-
-	userTable := user.ListToTable(userList, listResources)
-
-	if listResources {
-		for _, row := range footer {
-			userTable = append(userTable, row)
-		}
-	}
-
-	cli.RenderTable(headerList, userTable)
-}
-
-func makeFooter(userList []user.User, client k8s.Client) ([][]string, error) {
+func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, error) {
 	totalGPUs, err := client.GetTotalGPUs()
 	if err != nil {
 		return nil, err
 	}
 
-	resourcesUsed, err := user.TotalResourcesUsed(userList)
-	if err != nil {
-		return nil, err
-	}
+	resourcesUsed := user.TotalResourcesUsed(userList)
 
-	footerList := [][]string{
+	footer := [][]string{
 		{
-			"",
-			"",
-			"",
-			"",
-			"------",
-			"-----",
-			"",
-			"",
-		},
-		{
-			"",
 			"",
 			"",
 			"",
@@ -117,5 +106,5 @@ func makeFooter(userList []user.User, client k8s.Client) ([][]string, error) {
 		},
 	}
 
-	return footerList, nil
+	return footer, nil
 }

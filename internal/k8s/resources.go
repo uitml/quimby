@@ -5,28 +5,55 @@ import (
 	"fmt"
 	"strconv"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	ResourceRequestsGPU corev1.ResourceName = "requests.nvidia.com/gpu"
+	ResourceGPU         corev1.ResourceName = "nvidia.com/gpu"
+)
+
 type resourceSummary struct {
-	Max  string
-	Used string
+	Max  int64
+	Used int64
 }
 
 type ResourceQuota struct {
 	CPU     resourceSummary
 	GPU     resourceSummary
 	Memory  resourceSummary
-	Storage string
+	Storage int64
 }
 
 type ResourceRequest struct {
-	CPU    string
-	GPU    string
-	Memory string
+	CPU    int64
+	GPU    int64
+	Memory int64
 }
 
-func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
+func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName) (map[corev1.ResourceName]int64, error) {
+	result := make(map[corev1.ResourceName]int64)
+
+	for _, name := range names {
+		// Should probably check if the resource exists
+		res, ok := resources[name]
+
+		if !ok {
+			return nil, fmt.Errorf("error in resourceAsInt64: Resource %v does not exist", name)
+		}
+		val, ok := res.AsInt64()
+
+		if ok {
+			result[name] = val
+		} else {
+			result[name] = res.ToDec().Value()
+		}
+	}
+	return result, nil
+}
+
+func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	// Compute
 	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -39,41 +66,80 @@ func (c *K8sClient) GetResourceQuota(namespace string) (ResourceQuota, error) {
 		return ResourceQuota{}, err
 	}
 
+	// Convert all resources to Int64
+	maxResources, err := resourceAsInt64(
+		res.Items[0].Spec.Hard,
+		corev1.ResourceRequestsCPU,
+		corev1.ResourceRequestsMemory,
+		ResourceRequestsGPU,
+	)
+	if err != nil {
+		return ResourceQuota{}, err
+	}
+
+	usedResources, err := resourceAsInt64(
+		res.Items[0].Status.Used,
+		corev1.ResourceRequestsCPU,
+		corev1.ResourceRequestsMemory,
+		ResourceRequestsGPU,
+	)
+	if err != nil {
+		return ResourceQuota{}, err
+	}
+
+	storage, err := resourceAsInt64(
+		pvc.Items[0].Spec.Resources.Requests,
+		corev1.ResourceStorage,
+	)
+	if err != nil {
+		return ResourceQuota{}, err
+	}
+
 	rq := ResourceQuota{
 		CPU: resourceSummary{
-			Max:  fmt.Sprint(res.Items[0].Spec.Hard["requests.cpu"].ToUnstructured()),
-			Used: fmt.Sprint(res.Items[0].Status.Used["requests.cpu"].ToUnstructured()),
+			Max:  maxResources[corev1.ResourceRequestsCPU],
+			Used: usedResources[corev1.ResourceRequestsCPU],
 		},
 		GPU: resourceSummary{
-			Max:  fmt.Sprint(res.Items[0].Spec.Hard["requests.nvidia.com/gpu"].ToUnstructured()),
-			Used: fmt.Sprint(res.Items[0].Status.Used["requests.nvidia.com/gpu"].ToUnstructured()),
+			Max:  maxResources[ResourceRequestsGPU],
+			Used: usedResources[ResourceRequestsGPU],
 		},
 		Memory: resourceSummary{
-			Max:  fmt.Sprint(res.Items[0].Spec.Hard["requests.memory"].ToUnstructured()),
-			Used: fmt.Sprint(res.Items[0].Status.Used["requests.memory"].ToUnstructured()),
+			Max:  maxResources[corev1.ResourceRequestsMemory],
+			Used: usedResources[corev1.ResourceRequestsMemory],
 		},
-		Storage: fmt.Sprint(pvc.Items[0].Spec.Resources.Requests["storage"].ToUnstructured()),
+		Storage: storage[corev1.ResourceStorage],
 	}
 
 	return rq, nil
 }
 
-func (c *K8sClient) GetDefaultRequest(namespace string) (ResourceRequest, error) {
+func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
 	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceRequest{}, err
 	}
 
+	limits, err := resourceAsInt64(
+		res.Items[0].Spec.Limits[0].DefaultRequest,
+		corev1.ResourceCPU,
+		ResourceGPU,
+		corev1.ResourceRequestsMemory,
+	)
+	if err != nil {
+		return ResourceRequest{}, err
+	}
+
 	rr := ResourceRequest{
-		CPU:    fmt.Sprint(res.Items[0].Spec.Limits[0].DefaultRequest["cpu"].ToUnstructured()),
-		GPU:    fmt.Sprint(res.Items[0].Spec.Limits[0].DefaultRequest["nvidia.com/gpu"].ToUnstructured()),
-		Memory: fmt.Sprint(res.Items[0].Spec.Limits[0].DefaultRequest["memory"].ToUnstructured()),
+		CPU:    limits[corev1.ResourceCPU],
+		GPU:    limits[ResourceGPU],
+		Memory: limits[corev1.ResourceMemory],
 	}
 
 	return rr, nil
 }
 
-func (c *K8sClient) GetTotalGPUs() (int, error) {
+func (c *Client) GetTotalGPUs() (int, error) {
 	var totalGPUs int = 0
 
 	nodes, err := c.Clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})

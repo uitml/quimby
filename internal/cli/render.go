@@ -12,6 +12,16 @@ func formatRow(row []string) string {
 	return strings.Join(row, "\t")
 }
 
+func generateSeparator(columns []string) []string {
+	var separators []string
+
+	for _, column := range columns {
+		separators = append(separators, strings.Repeat("-", utf8.RuneCountInString(column)))
+	}
+
+	return separators
+}
+
 func generateHeader(headerList []string) string {
 	var separatorList []string
 
@@ -23,21 +33,22 @@ func generateHeader(headerList []string) string {
 	return strings.Join(header, "\n")
 }
 
-func formatTable(headerList []string, table [][]string) string {
+func formatTable(table [][][]string) string {
 	var formattedRows []string
 
-	for _, row := range table {
-		formattedRows = append(formattedRows, formatRow(row))
+	for _, sections := range table {
+		for _, row := range sections {
+			formattedRows = append(formattedRows, formatRow(row))
+		}
+		formattedRows = append(formattedRows, formatRow(generateSeparator(sections[len(sections)-1])))
 	}
 
-	joinedRows := strings.Join(formattedRows, "\n")
-
-	return strings.Join([]string{generateHeader(headerList), joinedRows}, "\n") + "\n"
+	return strings.Join(formattedRows, "\n") + "\n"
 }
 
-func RenderTable(headerList []string, table [][]string) {
+func RenderTable(table ...[][]string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	defer w.Flush()
 
-	fmt.Fprint(w, formatTable(headerList, table)+"\n")
+	fmt.Fprint(w, formatTable(table))
 }

@@ -5,6 +5,9 @@ This package implements tools and data structures for operating on users.
 package user
 
 import (
+	"fmt"
+
+	"github.com/dustin/go-humanize"
 	"github.com/uitml/quimby/internal/k8s"
 	internalvalidate "github.com/uitml/quimby/internal/validate"
 
@@ -16,7 +19,6 @@ type User struct {
 	Fullname      string
 	Email         string
 	Usertype      string
-	Status        string
 	ResourceQuota k8s.ResourceQuota
 }
 
@@ -28,16 +30,15 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// TODO: Access #GPUs, storage space and memory
 	usr := User{
 		Username: namespace.Name,
-		Fullname: namespace.Annotations["springfield.uit.no/user-fullname"],
-		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations["springfield.uit.no/user-email"], namespace.Name+"@post.uit.no"),
-		Usertype: namespace.Labels["springfield.uit.no/user-type"],
-		Status:   string(namespace.Status.Phase),
+		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
+		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
+		Usertype: namespace.Labels[k8s.LabelUserType],
 	}
 
 	return usr
 }
 
-func PopulateList(c k8s.Client, listResources bool) ([]User, error) {
+func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	var userList []User
 
 	namespaceList, err := c.GetNamespaceList()
@@ -65,7 +66,7 @@ func PopulateList(c k8s.Client, listResources bool) ([]User, error) {
 	return userList, nil
 }
 
-func ListToTable(userList []User, listResources bool) [][]string {
+func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	var table [][]string
 
 	for i, usr := range userList {
@@ -74,16 +75,17 @@ func ListToTable(userList []User, listResources bool) [][]string {
 			usr.Fullname,
 			usr.Email,
 			usr.Usertype,
-			usr.Status,
 		})
 
 		// Only show resources if the user has asked for it
 		if listResources {
-			table[i] = append(table[i], usr.ResourceQuota.GPU.Used+"/"+usr.ResourceQuota.GPU.Max)
-			table[i] = append(table[i], memoryPerGPU(&usr))
-			table[i] = append(table[i], usr.ResourceQuota.Storage)
+			m := memoryPerGPU(usr)
+
+			table[i] = append(table[i], fmt.Sprint(usr.ResourceQuota.GPU.Used)+"/"+fmt.Sprint(usr.ResourceQuota.GPU.Max))
+			table[i] = append(table[i], humanize.IBytes(uint64(m)))
+			table[i] = append(table[i], humanize.IBytes(uint64(usr.ResourceQuota.Storage)))
 		}
 	}
 
-	return table
+	return table, nil
 }
