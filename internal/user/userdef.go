@@ -19,7 +19,6 @@ type User struct {
 	Fullname      string
 	Email         string
 	Usertype      string
-	Status        string
 	ResourceQuota k8s.ResourceQuota
 }
 
@@ -31,10 +30,9 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// TODO: Access #GPUs, storage space and memory
 	usr := User{
 		Username: namespace.Name,
-		Fullname: namespace.Annotations["springfield.uit.no/user-fullname"],
-		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations["springfield.uit.no/user-email"], namespace.Name+"@post.uit.no"),
-		Usertype: namespace.Labels["springfield.uit.no/user-type"],
-		Status:   string(namespace.Status.Phase),
+		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
+		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
+		Usertype: namespace.Labels[k8s.LabelUserType],
 	}
 
 	return usr
@@ -77,7 +75,6 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 			usr.Fullname,
 			usr.Email,
 			usr.Usertype,
-			usr.Status,
 		})
 
 		// Only show resources if the user has asked for it

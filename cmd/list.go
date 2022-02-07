@@ -64,7 +64,6 @@ func renderUsers(userList []user.User, footer [][]string) error {
 			"Full name",
 			"E-mail",
 			"User type",
-			"Status",
 		},
 	}
 
@@ -97,7 +96,6 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 
 	footer := [][]string{
 		{
-			"",
 			"",
 			"",
 			"",

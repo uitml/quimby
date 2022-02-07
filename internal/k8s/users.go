@@ -7,6 +7,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	AnnotationUserFullname string = "springfield.uit.no/user-fullname"
+	AnnotationUserEmail    string = "springfield.uit.no/user-email"
+	LabelUserType          string = "springfield.uit.no/user-type"
+)
+
 func (c *Client) GetNamespaceList() (*corev1.NamespaceList, error) {
 	namespaceList, err := c.Clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
