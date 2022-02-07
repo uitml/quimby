@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -58,6 +59,11 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceQuota{}, err
+	}
+
+	// Check if user exists
+	if len(res.Items) == 0 {
+		return ResourceQuota{}, errors.New("error: user has no resources or does not exist")
 	}
 
 	// Storage

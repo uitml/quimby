@@ -82,3 +82,33 @@ func NewPVC(namespace string, size int64) *corev1.PersistentVolumeClaim {
 
 	return &quota
 }
+
+func NewNodeList(nodeNames []string, gpus []int64, unschedulable []bool) *corev1.NodeList {
+	var nodes []corev1.Node
+	for i, name := range nodeNames {
+		nodes = append(nodes, newNode(name, gpus[i], unschedulable[i]))
+	}
+
+	nodeList := corev1.NodeList{
+		TypeMeta: metav1.TypeMeta{Kind: "NodeList", APIVersion: "v1"},
+		Items:    nodes,
+	}
+
+	return &nodeList
+}
+
+func newNode(name string, gpus int64, isUnschedulable bool) corev1.Node {
+	capacity := map[corev1.ResourceName]resource.Quantity{}
+	if gpus > 0 {
+		capacity = map[corev1.ResourceName]resource.Quantity{ResourceGPU: *resource.NewQuantity(gpus, resource.DecimalSI)}
+	}
+
+	node := corev1.Node{
+		TypeMeta:   metav1.TypeMeta{Kind: "Node", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       corev1.NodeSpec{Unschedulable: isUnschedulable},
+		Status:     corev1.NodeStatus{Capacity: capacity},
+	}
+
+	return node
+}
