@@ -71,7 +71,10 @@ func renderUsers(userList []user.User, footer [][]string) error {
 		headers[0] = append(headers[0], "GPU", "Mem/GPU", "Storage")
 	}
 
-	userTable := user.ListToTable(userList, listResources)
+	userTable, err := user.ListToTable(userList, listResources)
+	if err != nil {
+		return err
+	}
 
 	if listResources {
 		cli.RenderTable(headers, userTable, footer)
@@ -96,7 +99,7 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 			"",
 			"",
 			"Total:",
-			fmt.Sprint(resourcesUsed["GPU"]) + "/" + fmt.Sprint(totalGPUs),
+			fmt.Sprint(resourcesUsed[k8s.ResourceGPU]) + "/" + fmt.Sprint(totalGPUs),
 			"",
 			"",
 		},

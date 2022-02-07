@@ -10,7 +10,7 @@ type ResourceClient interface {
 	GetNamespaceList() (*corev1.NamespaceList, error)
 	GetResourceQuota(string) (ResourceQuota, error)
 	GetDefaultRequest(string) (ResourceRequest, error)
-	GetTotalGPUs() (int, error)
+	GetTotalGPUs() (int64, error)
 }
 
 type Client struct {
