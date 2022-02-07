@@ -21,3 +21,18 @@ func (c *Client) GetNamespaceList() (*corev1.NamespaceList, error) {
 
 	return namespaceList, nil
 }
+
+func NewNamespace(name string, labels map[string]string, annotations map[string]string) *corev1.Namespace {
+	ns := corev1.Namespace{
+		TypeMeta: metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec:   corev1.NamespaceSpec{},
+		Status: corev1.NamespaceStatus{},
+	}
+
+	return &ns
+}

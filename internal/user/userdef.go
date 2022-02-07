@@ -69,7 +69,7 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	return userList, nil
 }
 
-func ListToTable(userList []User, listResources bool) [][]string {
+func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	var table [][]string
 
 	for i, usr := range userList {
@@ -90,5 +90,5 @@ func ListToTable(userList []User, listResources bool) [][]string {
 		}
 	}
 
-	return table
+	return table, nil
 }

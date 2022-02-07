@@ -8,99 +8,11 @@ import (
 	"reflect"
 	"testing"
 
+	internalfake "github.com/uitml/quimby/internal/fake"
 	"github.com/uitml/quimby/internal/k8s"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
-
-func newFakeNamespace(name string, labels map[string]string, annotations map[string]string) *corev1.Namespace {
-	ns := corev1.Namespace{
-		metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
-		metav1.ObjectMeta{
-			Name:        name,
-			Labels:      labels,
-			Annotations: annotations,
-		},
-		corev1.NamespaceSpec{},
-		corev1.NamespaceStatus{},
-	}
-
-	return &ns
-}
-
-func newFakeResourceQuota(namespace string, cpu int64, gpu int64, memory int64, inverseScaling int64) *corev1.ResourceQuota {
-	quota := corev1.ResourceQuota{
-		TypeMeta: metav1.TypeMeta{Kind: "ResourceQuota", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "compute-resources",
-			Namespace: namespace,
-		},
-		Spec: corev1.ResourceQuotaSpec{
-			Hard: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceRequestsCPU:    *resource.NewQuantity(cpu, resource.DecimalSI),
-				k8s.ResourceRequestsGPU:       *resource.NewQuantity(gpu, resource.DecimalSI),
-				corev1.ResourceRequestsMemory: *resource.NewQuantity((memory*1024+256)*1024*1024, resource.BinarySI),
-			},
-		},
-		Status: corev1.ResourceQuotaStatus{
-			Hard: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceRequestsCPU:    *resource.NewMilliQuantity(cpu, resource.DecimalSI),
-				k8s.ResourceRequestsGPU:       *resource.NewQuantity(gpu, resource.DecimalSI),
-				corev1.ResourceRequestsMemory: *resource.NewQuantity((memory*1024+256)*1024*1024, resource.BinarySI),
-			},
-			Used: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceRequestsCPU:    *resource.NewQuantity(cpu/inverseScaling, resource.DecimalSI),
-				k8s.ResourceRequestsGPU:       *resource.NewQuantity(gpu/inverseScaling, resource.DecimalSI),
-				corev1.ResourceRequestsMemory: *resource.NewQuantity((memory*1024+256)*1024*1024/inverseScaling, resource.BinarySI),
-			},
-		},
-	}
-
-	return &quota
-}
-
-func newFakeResourceQuotaList(namespace string, cpu int64, gpu int64, memory int64, inverseScaling int64) *corev1.ResourceQuotaList {
-	quota := corev1.ResourceQuotaList{
-		TypeMeta: metav1.TypeMeta{Kind: "ResourceQuotaList", APIVersion: "v1"},
-		Items:    []corev1.ResourceQuota{*newFakeResourceQuota(namespace, cpu, gpu, memory, inverseScaling)},
-	}
-
-	return &quota
-}
-
-func newFakePVC(namespace string, size int64, inverseScaling int64) *corev1.PersistentVolumeClaim {
-	storageClass := "nfs-storage"
-	quota := corev1.PersistentVolumeClaim{
-		TypeMeta:   metav1.TypeMeta{Kind: "PersistentVolumeClaim", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{Name: "storage", Namespace: namespace},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{"ReadWriteMany"},
-			Resources: corev1.ResourceRequirements{
-				Requests: map[corev1.ResourceName]resource.Quantity{
-					corev1.ResourceStorage: *resource.NewQuantity(
-						size*1024*1024*1024,
-						resource.BinarySI,
-					),
-				},
-			},
-			VolumeName:       "storage",
-			StorageClassName: &storageClass,
-		},
-	}
-
-	return &quota
-}
-
-func newFakePVCList(namespace string, size int64, inverseScaling int64) *corev1.PersistentVolumeClaimList {
-	quota := corev1.PersistentVolumeClaimList{
-		TypeMeta: metav1.TypeMeta{Kind: "PersistentVolumeClaimList", APIVersion: "v1"},
-		Items:    []corev1.PersistentVolumeClaim{*newFakePVC(namespace, size, inverseScaling)},
-	}
-
-	return &quota
-}
 
 func TestFromNamespace(t *testing.T) {
 	type args struct {
@@ -115,7 +27,7 @@ func TestFromNamespace(t *testing.T) {
 		{
 			name: "all fields present",
 			args: args{
-				namespace: *newFakeNamespace(
+				namespace: *k8s.NewNamespace(
 					"fba000",
 					map[string]string{k8s.LabelUserType: "admin"},
 					map[string]string{k8s.AnnotationUserFullname: "Foo Bar", k8s.AnnotationUserEmail: "foo@bar.baz"},
@@ -126,7 +38,7 @@ func TestFromNamespace(t *testing.T) {
 		{
 			name: "missing annotations and labels",
 			args: args{
-				namespace: *newFakeNamespace(
+				namespace: *k8s.NewNamespace(
 					"boo001",
 					map[string]string{},
 					map[string]string{},
@@ -163,13 +75,13 @@ func TestPopulateList(t *testing.T) {
 			name: "all fields present - list resources",
 			args: args{
 				c: &k8s.Client{Clientset: fake.NewSimpleClientset(
-					newFakeNamespace(
+					k8s.NewNamespace(
 						"foo123",
 						map[string]string{k8s.LabelUserType: "admin"},
 						map[string]string{k8s.AnnotationUserFullname: "Foo Bar", k8s.AnnotationUserEmail: "foo@bar.baz"},
 					),
-					newFakeResourceQuotaList("foo123", 4500, 2, 16, 2),
-					newFakePVCList("foo123", 500, 2),
+					internalfake.NewResourceQuotaList("foo123", 4500, 2, 16, 2),
+					internalfake.NewPVCList("foo123", 500),
 				)},
 				listResources: true,
 			},
@@ -193,13 +105,13 @@ func TestPopulateList(t *testing.T) {
 			name: "all fields present - no resources",
 			args: args{
 				c: &k8s.Client{Clientset: fake.NewSimpleClientset(
-					newFakeNamespace(
+					k8s.NewNamespace(
 						"foo123",
 						map[string]string{k8s.LabelUserType: "admin"},
 						map[string]string{k8s.AnnotationUserFullname: "Foo Bar", k8s.AnnotationUserEmail: "foo@bar.baz"},
 					),
-					newFakeResourceQuotaList("foo123", 4500, 2, 16, 2),
-					newFakePVCList("foo123", 500, 2),
+					internalfake.NewResourceQuotaList("foo123", 4500, 2, 16, 2),
+					internalfake.NewPVCList("foo123", 500),
 				)},
 				listResources: false,
 			},
