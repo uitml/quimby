@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -156,4 +157,46 @@ func (c *Client) GetTotalGPUs() (int64, error) {
 	}
 
 	return totalGPUs, nil
+}
+
+func NewResourceQuota(namespace string, cpu int64, gpu int64, memory int64) *corev1.ResourceQuota {
+	quota := corev1.ResourceQuota{
+		TypeMeta: metav1.TypeMeta{Kind: "ResourceQuota", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "compute-resources",
+			Namespace: namespace,
+		},
+		Spec: corev1.ResourceQuotaSpec{
+			Hard: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceRequestsCPU:    *resource.NewQuantity(cpu, resource.DecimalSI),
+				ResourceRequestsGPU:           *resource.NewQuantity(gpu, resource.DecimalSI),
+				corev1.ResourceRequestsMemory: *resource.NewQuantity((memory*1024+256)*1024*1024, resource.BinarySI),
+			},
+		},
+	}
+
+	return &quota
+}
+
+func NewPVC(namespace string, size int64) *corev1.PersistentVolumeClaim {
+	storageClass := "nfs-storage"
+	quota := corev1.PersistentVolumeClaim{
+		TypeMeta:   metav1.TypeMeta{Kind: "PersistentVolumeClaim", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "storage", Namespace: namespace},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{"ReadWriteMany"},
+			Resources: corev1.ResourceRequirements{
+				Requests: map[corev1.ResourceName]resource.Quantity{
+					corev1.ResourceStorage: *resource.NewQuantity(
+						size*1024*1024*1024,
+						resource.BinarySI,
+					),
+				},
+			},
+			VolumeName:       "storage",
+			StorageClassName: &storageClass,
+		},
+	}
+
+	return &quota
 }
