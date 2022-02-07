@@ -93,10 +93,7 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 		return nil, err
 	}
 
-	resourcesUsed, err := user.TotalResourcesUsed(userList)
-	if err != nil {
-		return nil, err
-	}
+	resourcesUsed := user.TotalResourcesUsed(userList)
 
 	footer := [][]string{
 		{

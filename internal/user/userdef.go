@@ -5,6 +5,9 @@ This package implements tools and data structures for operating on users.
 package user
 
 import (
+	"fmt"
+
+	"github.com/dustin/go-humanize"
 	"github.com/uitml/quimby/internal/k8s"
 	internalvalidate "github.com/uitml/quimby/internal/validate"
 
@@ -79,15 +82,11 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 
 		// Only show resources if the user has asked for it
 		if listResources {
-			m, err := memoryPerGPU(&usr)
+			m := memoryPerGPU(usr)
 
-			if err != nil {
-				return nil, err
-			}
-
-			table[i] = append(table[i], usr.ResourceQuota.GPU.Used+"/"+usr.ResourceQuota.GPU.Max)
-			table[i] = append(table[i], m)
-			table[i] = append(table[i], usr.ResourceQuota.Storage)
+			table[i] = append(table[i], fmt.Sprint(usr.ResourceQuota.GPU.Used)+"/"+fmt.Sprint(usr.ResourceQuota.GPU.Max))
+			table[i] = append(table[i], humanize.IBytes(uint64(m)))
+			table[i] = append(table[i], humanize.IBytes(uint64(usr.ResourceQuota.Storage)))
 		}
 	}
 

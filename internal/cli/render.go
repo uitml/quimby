@@ -43,7 +43,7 @@ func formatTable(table [][][]string) string {
 		formattedRows = append(formattedRows, formatRow(generateSeparator(sections[len(sections)-1])))
 	}
 
-	return strings.Join(formattedRows, "\n")
+	return strings.Join(formattedRows, "\n") + "\n"
 }
 
 func RenderTable(table ...[][]string) {
