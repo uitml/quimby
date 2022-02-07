@@ -71,11 +71,7 @@ func renderUsers(userList []user.User, footer [][]string) error {
 		headers[0] = append(headers[0], "GPU", "Mem/GPU", "Storage")
 	}
 
-	userTable, err := user.ListToTable(userList, listResources)
-
-	if err != nil {
-		return err
-	}
+	userTable := user.ListToTable(userList, listResources)
 
 	if listResources {
 		cli.RenderTable(headers, userTable, footer)

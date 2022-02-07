@@ -5,6 +5,7 @@ This package implements tools and data structures for operating on users.
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dustin/go-humanize"
@@ -26,8 +27,6 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// I am envisioning storing resource allowance needed (e.g. memory per job) as annotations in namespace and
 	// default values for resources in the cluster somehow (annotation on Springfield?).
 	// Then this could be polled and populated in the list for users with default values (empty annotation)
-
-	// TODO: Access #GPUs, storage space and memory
 	usr := User{
 		Username: namespace.Name,
 		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
@@ -63,10 +62,14 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 		}
 	}
 
+	if len(userList) == 0 {
+		return userList, errors.New("error: no users found on the cluster")
+	}
+
 	return userList, nil
 }
 
-func ListToTable(userList []User, listResources bool) ([][]string, error) {
+func ListToTable(userList []User, listResources bool) [][]string {
 	var table [][]string
 
 	for i, usr := range userList {
@@ -87,5 +90,5 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 		}
 	}
 
-	return table, nil
+	return table
 }

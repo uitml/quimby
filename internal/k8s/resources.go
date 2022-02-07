@@ -14,15 +14,15 @@ const (
 	ResourceGPU         corev1.ResourceName = "nvidia.com/gpu"
 )
 
-type resourceSummary struct {
+type ResourceSummary struct {
 	Max  int64
 	Used int64
 }
 
 type ResourceQuota struct {
-	CPU     resourceSummary
-	GPU     resourceSummary
-	Memory  resourceSummary
+	CPU     ResourceSummary
+	GPU     ResourceSummary
+	Memory  ResourceSummary
 	Storage int64
 }
 
@@ -96,15 +96,15 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	}
 
 	rq := ResourceQuota{
-		CPU: resourceSummary{
+		CPU: ResourceSummary{
 			Max:  maxResources[corev1.ResourceRequestsCPU],
 			Used: usedResources[corev1.ResourceRequestsCPU],
 		},
-		GPU: resourceSummary{
+		GPU: ResourceSummary{
 			Max:  maxResources[ResourceRequestsGPU],
 			Used: usedResources[ResourceRequestsGPU],
 		},
-		Memory: resourceSummary{
+		Memory: ResourceSummary{
 			Max:  maxResources[corev1.ResourceRequestsMemory],
 			Used: usedResources[corev1.ResourceRequestsMemory],
 		},
