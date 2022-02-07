@@ -5,6 +5,7 @@ This package implements tools and data structures for operating on users.
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dustin/go-humanize"
@@ -61,10 +62,14 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 		}
 	}
 
+	if len(userList) == 0 {
+		return userList, errors.New("error: no users found on the cluster")
+	}
+
 	return userList, nil
 }
 
-func ListToTable(userList []User, listResources bool) ([][]string, error) {
+func ListToTable(userList []User, listResources bool) [][]string {
 	var table [][]string
 
 	for i, usr := range userList {
@@ -85,5 +90,5 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 		}
 	}
 
-	return table, nil
+	return table
 }
