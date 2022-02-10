@@ -6,10 +6,10 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 
+	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/user"
 
 	"github.com/spf13/cobra"
 )
@@ -20,10 +20,8 @@ func newCreateCmd() *cobra.Command {
 		Use:   "new",
 		Short: "Create a new Springfield user.",
 
-		RunE: RunGetConfig,
+		RunE: RunGetDefault,
 	}
-
-	// listCmd.Flags().BoolVarP(&listResources, "show-resources", "r", false, "Show resources for all users.")
 
 	return createCmd
 }
@@ -40,14 +38,13 @@ func RunCreate(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func RunGetConfig(cmd *cobra.Command, args []string) error {
-	resp, err := http.Get("https://raw.githubusercontent.com/uitml/quimby/main/internal/validate/helpers.go")
+func RunGetDefault(cmd *cobra.Command, args []string) error {
+	conf, err := cli.ParseConfig()
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := user.GetDefaultConfig(conf.GithubRepo, conf.GithubConfigDir+"/default-user.yaml", conf.GithubUser, conf.GithubToken)
 	if err != nil {
 		return err
 	}
