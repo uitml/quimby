@@ -145,24 +145,26 @@ func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
 	return rr, nil
 }
 
-func (c *Client) GetTotalGPUs() (int64, error) {
+func (c *Client) GetTotalGPUs() (ResourceSummary, error) {
 	var totalGPUs int64 = 0
+	// TODO: Find out how to get used GPUs from node info. Haven't found it yet, so now it's being counted from the user info.
+	var usedGPUs int64 = 0
 
 	nodes, err := c.Clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return 0, err
+		return ResourceSummary{}, err
 	}
 
 	for _, node := range nodes.Items {
-		if !node.Spec.Unschedulable {
-			// Ignoring errors here since some nodes might not have all resources
-			g, _ := resourceAsInt64(node.Status.Capacity, ResourceGPU)
-
-			totalGPUs += g[ResourceGPU]
+		if node.Spec.Unschedulable {
+			continue
 		}
+		// Ignoring errors here since some nodes might not have all resources
+		g, _ := resourceAsInt64(node.Status.Capacity, ResourceGPU)
+		totalGPUs += g[ResourceGPU]
 	}
 
-	return totalGPUs, nil
+	return ResourceSummary{Max: totalGPUs, Used: usedGPUs}, nil
 }
 
 func NewResourceQuota(namespace string, cpu int64, gpu int64, memory int64) *corev1.ResourceQuota {

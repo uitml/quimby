@@ -107,7 +107,7 @@ func newNode(name string, gpus int64, isUnschedulable bool) corev1.Node {
 		TypeMeta:   metav1.TypeMeta{Kind: "Node", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec:       corev1.NodeSpec{Unschedulable: isUnschedulable},
-		Status:     corev1.NodeStatus{Capacity: capacity},
+		Status:     corev1.NodeStatus{Capacity: capacity, Allocatable: capacity},
 	}
 
 	return node
