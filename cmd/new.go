@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/uitml/quimby/internal/config"
 	"github.com/uitml/quimby/internal/config/reader"
@@ -61,14 +62,30 @@ func RunGetDefault(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(usrConf)
 
 	// Generate k8s user config from template
 	k8sUser, err := config.GenerateConfig(conf.GithubConfigDir+"/default-user-quimby.yaml", &rdr, usrConf)
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(k8sUser))
+
+	// Instead of reading each section, interpreting them, populating k8s structs and applying the correct one...
+	// pipe into kubectl apply -f -
+	command := exec.Command("kubectl", "apply", "-f", "-")
+
+	stdin, err := command.StdinPipe()
+	if err != nil {
+		return err
+	}
+	if err := command.Start(); err != nil {
+		return err
+	}
+	defer stdin.Close()
+
+	_, err = stdin.Write(k8sUser)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
