@@ -1,0 +1,7 @@
+name: foo123
+requests.cpu: 4500m
+requests.memory: 33024Mi
+requests.nvidia.com/gpu: 2
+nvidia.com/gpu: 1
+storage: 500Gi
+cpu: 200m

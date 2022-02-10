@@ -34,6 +34,7 @@ func (usr *User) DefaultValues(path string, rdr reader.Reader) error {
 	return nil
 }
 
+// Generate config from the template in path. Populate with values from usr.
 func GenerateConfig(path string, rdr reader.Reader, usr User) ([]byte, error) {
 	body, err := rdr.Read(path)
 	if err != nil {

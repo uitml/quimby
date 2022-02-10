@@ -1,0 +1,8 @@
+GPU: 2
+GPUPerJob: 1
+MemoryPerJob: 16
+CPUPerJob: 2
+StorageProxyCPURequest: 200
+StorageProxyCPULimit: 500
+StorageProxyMemory: 256
+StorageSize: 500
