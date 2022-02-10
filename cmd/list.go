@@ -22,7 +22,7 @@ func newListCmd() *cobra.Command {
 		Use:   "ls",
 		Short: "List all Springfield users.",
 
-		RunE: Run,
+		RunE: RunList,
 	}
 
 	listCmd.Flags().BoolVarP(&listResources, "show-resources", "r", false, "Show resources for all users.")
@@ -30,7 +30,7 @@ func newListCmd() *cobra.Command {
 	return listCmd
 }
 
-func Run(cmd *cobra.Command, args []string) error {
+func RunList(cmd *cobra.Command, args []string) error {
 	client, err := k8s.NewClient()
 	var footer [][]string
 
