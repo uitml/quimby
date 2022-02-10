@@ -1,15 +1,16 @@
-package cli
+package config
 
 import "github.com/spf13/viper"
 
-type Config struct {
+type App struct {
 	GithubUser      string
 	GithubToken     string
 	GithubRepo      string
 	GithubConfigDir string
+	GithubValueDir  string
 }
 
-func ParseConfig() (*Config, error) {
+func Parse() (*App, error) {
 	v := viper.New()
 	v.AddConfigPath("$HOME/.config/quimby")
 	v.SetConfigName("config")
@@ -18,13 +19,13 @@ func ParseConfig() (*Config, error) {
 	v.SetEnvPrefix("quimby")
 	v.AutomaticEnv()
 
+	cfg := &App{}
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, err
 		}
 	}
 
-	cfg := &Config{}
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, err
 	}
