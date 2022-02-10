@@ -130,3 +130,30 @@ func newLimitRange(username string, defaultCPU string, defaultMemory string, def
 
 	return &lr, nil
 }
+
+func (c *Client) UserExists(u string) (bool, error) {
+	namespaces, err := c.GetNamespaceList()
+	if err != nil {
+		return false, err
+	}
+
+	for _, namespace := range namespaces.Items {
+		if validate.Username(namespace.Name) && namespace.Name == u {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (c *Client) DeleteUser(u string) error {
+	gracePeriod := int64(0)
+	policy := metav1.DeletePropagationForeground
+	opts := metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod, PropagationPolicy: &policy}
+
+	err := c.Clientset.CoreV1().Namespaces().Delete(context.TODO(), u, opts)
+	if err != nil {
+		return err
+	}
+	return nil
+}

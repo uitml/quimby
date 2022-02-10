@@ -149,14 +149,14 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    int64
+		want    ResourceSummary
 		wantErr bool
 	}{
 		// Testcase 1: Empty node list. Should return zero
 		{
 			name:    "No nodes",
 			fields:  fields{fake.NewSimpleClientset()},
-			want:    0,
+			want:    ResourceSummary{Max: 0, Used: 0},
 			wantErr: false,
 		},
 		// Testcase 2: 3 servers, 2 with GPUs
@@ -165,7 +165,7 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 			fields: fields{fake.NewSimpleClientset(
 				internalfake.NewNodeList([]string{"foo", "bar", "baz"}, []int64{0, 8, 7}, []bool{false, false, false}),
 			)},
-			want:    15,
+			want:    ResourceSummary{Max: 15, Used: 0},
 			wantErr: false,
 		},
 		// Testcase 3: 3 servers, 2 with GPUs, but one is unschedulable
@@ -174,7 +174,7 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 			fields: fields{fake.NewSimpleClientset(
 				internalfake.NewNodeList([]string{"foo", "bar", "baz"}, []int64{0, 8, 7}, []bool{false, false, true}),
 			)},
-			want:    8,
+			want:    ResourceSummary{Max: 8, Used: 0},
 			wantErr: false,
 		},
 	}

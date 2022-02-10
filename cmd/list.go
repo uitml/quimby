@@ -86,12 +86,12 @@ func renderUsers(userList []user.User, footer [][]string) error {
 }
 
 func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, error) {
-	totalGPUs, err := client.GetTotalGPUs()
+	GPUSummary, err := client.GetTotalGPUs()
 	if err != nil {
 		return nil, err
 	}
 
-	resourcesUsed := user.TotalResourcesUsed(userList)
+	resourceUsage := user.TotalResourcesUsed(userList)
 
 	footer := [][]string{
 		{
@@ -99,7 +99,7 @@ func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, er
 			"",
 			"",
 			"Total:",
-			fmt.Sprint(resourcesUsed[k8s.ResourceGPU]) + "/" + fmt.Sprint(totalGPUs),
+			fmt.Sprint(resourceUsage[k8s.ResourceGPU]) + "/" + fmt.Sprint(GPUSummary.Max),
 			"",
 			"",
 		},
