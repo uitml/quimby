@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -51,4 +52,34 @@ func RenderTable(table ...[][]string) {
 	defer w.Flush()
 
 	fmt.Fprint(w, formatTable(table))
+}
+
+// Prompts the user for a confirmation [yes/no].
+// Returns true/false if the user answers yes/no.
+// Default choice defined by 'def'
+func Confirmation(str string, def bool) (bool, error) {
+	var defAns string
+	reader := bufio.NewReader(os.Stdin)
+
+	switch def {
+	case true:
+		defAns = "[Y/n]"
+	case false:
+		defAns = "[y/N]"
+	}
+	fmt.Printf("%s %s: ", str, defAns)
+	answer, err := reader.ReadString('\n')
+	if err != nil {
+		return false, err
+	}
+
+	answer = strings.ToLower(strings.TrimSpace(answer))
+
+	if answer == "y" || answer == "yes" {
+		return true, nil
+	} else if answer == "n" || answer == "no" {
+		return false, nil
+	}
+
+	return def, nil
 }
