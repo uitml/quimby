@@ -11,6 +11,8 @@ type ResourceClient interface {
 	GetResourceQuota(string) (ResourceQuota, error)
 	GetDefaultRequest(string) (ResourceRequest, error)
 	GetTotalGPUs() (int64, error)
+	NewUser(string, string, string, string) error
+	NewSimpleUser(string) error
 }
 
 type Client struct {

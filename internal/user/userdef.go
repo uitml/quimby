@@ -63,7 +63,7 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	}
 
 	if len(userList) == 0 {
-		return userList, errors.New("error: no users found on the cluster")
+		return userList, errors.New("no users found on the cluster")
 	}
 
 	return userList, nil

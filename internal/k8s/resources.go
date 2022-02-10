@@ -41,7 +41,7 @@ func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName
 		res, ok := resources[name]
 
 		if !ok {
-			return nil, fmt.Errorf("error in resourceAsInt64: Resource %v does not exist", name)
+			return nil, fmt.Errorf("in resourceAsInt64: Resource %v does not exist", name)
 		}
 		val, ok := res.AsInt64()
 
@@ -56,18 +56,18 @@ func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName
 
 func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	// Compute
-	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.Background(), metav1.ListOptions{})
+	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceQuota{}, err
 	}
 
 	// Check if user exists
 	if len(res.Items) == 0 {
-		return ResourceQuota{}, errors.New("error: user has no resources or does not exist")
+		return ResourceQuota{}, errors.New("user has no resources or does not exist")
 	}
 
 	// Storage
-	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.Background(), metav1.ListOptions{})
+	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceQuota{}, err
 	}
@@ -121,7 +121,7 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 }
 
 func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
-	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.Background(), metav1.ListOptions{})
+	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return ResourceRequest{}, err
 	}
