@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/uitml/quimby/internal/config"
-	"github.com/uitml/quimby/internal/config/reader"
+	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/user"
+	"github.com/uitml/quimby/internal/user/reader"
 	"github.com/uitml/quimby/internal/validate"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ func RunGetDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid username: %s", username)
 	}
 
-	conf, err := config.Parse()
+	conf, err := cli.ParseConfig()
 	if err != nil {
 		return err
 	}
@@ -57,14 +58,14 @@ func RunGetDefault(cmd *cobra.Command, args []string) error {
 		Token:    conf.GithubToken,
 		Repo:     conf.GithubRepo,
 	}
-	usrConf := config.User{Username: username}
+	usrConf := user.Config{Username: username}
 	err = usrConf.DefaultValues(conf.GithubValueDir+"/default-user.yaml", &rdr)
 	if err != nil {
 		return err
 	}
 
 	// Generate k8s user config from template
-	k8sUser, err := config.GenerateConfig(conf.GithubConfigDir+"/default-user-quimby.yaml", &rdr, usrConf)
+	k8sUser, err := user.GenerateConfig(conf.GithubConfigDir+"/default-user-quimby.yaml", &rdr, usrConf)
 	if err != nil {
 		return err
 	}

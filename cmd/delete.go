@@ -59,7 +59,7 @@ func RunDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("User %s successfully deleted. Persistent volumes must be removed manually.", user)
+	fmt.Printf("User %s successfully deleted. Persistent volumes must be removed manually.\n", user)
 
 	return nil
 }

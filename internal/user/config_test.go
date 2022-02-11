@@ -1,10 +1,10 @@
-package config
+package user
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/uitml/quimby/internal/config/reader"
+	"github.com/uitml/quimby/internal/user/reader"
 )
 
 func TestUser_DefaultValues(t *testing.T) {
@@ -21,13 +21,13 @@ func TestUser_DefaultValues(t *testing.T) {
 	}
 	type args struct {
 		path string
-		rdr  reader.Reader
+		rdr  reader.Config
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    User
+		want    Config
 		wantErr bool
 	}{
 		// Read data from file
@@ -35,7 +35,7 @@ func TestUser_DefaultValues(t *testing.T) {
 			name:   "Read data from file",
 			fields: fields{Username: "foo123"},
 			args:   args{path: "./testdata/values.yaml", rdr: &reader.File{}},
-			want: User{
+			want: Config{
 				Username:               "foo123",
 				GPU:                    2,
 				GPUPerJob:              1,
@@ -53,7 +53,7 @@ func TestUser_DefaultValues(t *testing.T) {
 			name:   "Read data from invalid file",
 			fields: fields{Username: "foo123"},
 			args:   args{path: "./testdata/valuess.yaml", rdr: &reader.File{}},
-			want: User{
+			want: Config{
 				Username:               "foo123",
 				GPU:                    0,
 				GPUPerJob:              0,
@@ -69,7 +69,7 @@ func TestUser_DefaultValues(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			usr := &User{
+			usr := &Config{
 				Username:               tt.fields.Username,
 				GPU:                    tt.fields.GPU,
 				GPUPerJob:              tt.fields.GPUPerJob,
@@ -96,8 +96,8 @@ func TestGenerateConfig(t *testing.T) {
 
 	type args struct {
 		path string
-		rdr  reader.Reader
-		usr  User
+		rdr  reader.Config
+		usr  Config
 	}
 	tests := []struct {
 		name    string
@@ -111,7 +111,7 @@ func TestGenerateConfig(t *testing.T) {
 			args: args{
 				path: "./testdata/template.yaml",
 				rdr:  &reader.File{},
-				usr: User{
+				usr: Config{
 					Username:               "foo123",
 					GPU:                    2,
 					GPUPerJob:              1,
@@ -132,7 +132,7 @@ func TestGenerateConfig(t *testing.T) {
 			args: args{
 				path: "./testdata/templatefoo.yaml",
 				rdr:  &reader.File{},
-				usr: User{
+				usr: Config{
 					Username:               "foo123",
 					GPU:                    2,
 					GPUPerJob:              1,
