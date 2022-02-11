@@ -1,5 +1,5 @@
 package reader
 
-type Reader interface {
+type Config interface {
 	Read(string) ([]byte, error)
 }

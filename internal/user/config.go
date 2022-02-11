@@ -1,15 +1,15 @@
-package config
+package user
 
 import (
 	"bytes"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/uitml/quimby/internal/config/reader"
+	"github.com/uitml/quimby/internal/user/reader"
 	"gopkg.in/yaml.v2"
 )
 
-type User struct {
+type Config struct {
 	Username               string `yaml:"Username,omitempty"`
 	GPU                    int    `yaml:"GPU"`
 	GPUPerJob              int    `yaml:"GPUPerJob"`
@@ -22,7 +22,7 @@ type User struct {
 }
 
 // Populates usr given a path to a yaml file using the Reader
-func (usr *User) DefaultValues(path string, rdr reader.Reader) error {
+func (usr *Config) DefaultValues(path string, rdr reader.Config) error {
 	body, err := rdr.Read(path)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (usr *User) DefaultValues(path string, rdr reader.Reader) error {
 }
 
 // Generate config from the template in path. Populate with values from usr.
-func GenerateConfig(path string, rdr reader.Reader, usr User) ([]byte, error) {
+func GenerateConfig(path string, rdr reader.Config, usr Config) ([]byte, error) {
 	body, err := rdr.Read(path)
 	if err != nil {
 		return nil, err

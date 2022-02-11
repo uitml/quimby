@@ -1,4 +1,4 @@
-package config
+package cli
 
 import "github.com/spf13/viper"
 
@@ -10,7 +10,7 @@ type App struct {
 	GithubValueDir  string
 }
 
-func Parse() (*App, error) {
+func ParseConfig() (*App, error) {
 	v := viper.New()
 	v.AddConfigPath("$HOME/.config/quimby")
 	v.SetConfigName("config")
