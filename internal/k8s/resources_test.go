@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	internalfake "github.com/uitml/quimby/internal/fake"
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -80,7 +81,7 @@ func Test_resourceAsInt64(t *testing.T) {
 		})
 	}
 }
-func TestClient_GetResourceQuota(t *testing.T) {
+func TestClient_Quota(t *testing.T) {
 	type fields struct {
 		Clientset kubernetes.Interface
 	}
@@ -91,7 +92,7 @@ func TestClient_GetResourceQuota(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    ResourceQuota
+		want    resource.Quota
 		wantErr bool
 	}{
 		// Testcase 1:
@@ -104,10 +105,10 @@ func TestClient_GetResourceQuota(t *testing.T) {
 				),
 			},
 			args: args{namespace: "foo123"},
-			want: ResourceQuota{
-				CPU:     ResourceSummary{Max: 4500, Used: 2250},
-				GPU:     ResourceSummary{Max: 2, Used: 1},
-				Memory:  ResourceSummary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
+			want: resource.Quota{
+				CPU:     resource.Summary{Max: 4500, Used: 2250},
+				GPU:     resource.Summary{Max: 2, Used: 1},
+				Memory:  resource.Summary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
 				Storage: 500 * 1024 * 1024 * 1024,
 			},
 			wantErr: false,
@@ -121,7 +122,7 @@ func TestClient_GetResourceQuota(t *testing.T) {
 				),
 			},
 			args:    args{namespace: "bar123"},
-			want:    ResourceQuota{},
+			want:    resource.Quota{},
 			wantErr: true,
 		},
 	}
@@ -130,33 +131,33 @@ func TestClient_GetResourceQuota(t *testing.T) {
 			c := &Client{
 				Clientset: tt.fields.Clientset,
 			}
-			got, err := c.GetResourceQuota(tt.args.namespace)
+			got, err := c.Quota(tt.args.namespace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetResourceQuota() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Client.Quota() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Client.GetResourceQuota() = %v, want %v", got, tt.want)
+				t.Errorf("Client.Quota() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestClient_GetTotalGPUs(t *testing.T) {
+func TestClient_TotalGPUs(t *testing.T) {
 	type fields struct {
 		Clientset kubernetes.Interface
 	}
 	tests := []struct {
 		name    string
 		fields  fields
-		want    ResourceSummary
+		want    resource.Summary
 		wantErr bool
 	}{
 		// Testcase 1: Empty node list. Should return zero
 		{
 			name:    "No nodes",
 			fields:  fields{fake.NewSimpleClientset()},
-			want:    ResourceSummary{Max: 0, Used: 0},
+			want:    resource.Summary{Max: 0, Used: 0},
 			wantErr: false,
 		},
 		// Testcase 2: 3 servers, 2 with GPUs
@@ -165,7 +166,7 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 			fields: fields{fake.NewSimpleClientset(
 				internalfake.NewNodeList([]string{"foo", "bar", "baz"}, []int64{0, 8, 7}, []bool{false, false, false}),
 			)},
-			want:    ResourceSummary{Max: 15, Used: 0},
+			want:    resource.Summary{Max: 15, Used: 0},
 			wantErr: false,
 		},
 		// Testcase 3: 3 servers, 2 with GPUs, but one is unschedulable
@@ -174,7 +175,7 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 			fields: fields{fake.NewSimpleClientset(
 				internalfake.NewNodeList([]string{"foo", "bar", "baz"}, []int64{0, 8, 7}, []bool{false, false, true}),
 			)},
-			want:    ResourceSummary{Max: 8, Used: 0},
+			want:    resource.Summary{Max: 8, Used: 0},
 			wantErr: false,
 		},
 	}
@@ -183,13 +184,13 @@ func TestClient_GetTotalGPUs(t *testing.T) {
 			c := &Client{
 				Clientset: tt.fields.Clientset,
 			}
-			got, err := c.GetTotalGPUs()
+			got, err := c.TotalGPUs()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetTotalGPUs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Client.TotalGPUs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Client.GetTotalGPUs() = %v, want %v", got, tt.want)
+				t.Errorf("Client.TotalGPUs() = %v, want %v", got, tt.want)
 			}
 		})
 	}

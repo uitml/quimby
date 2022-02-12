@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openlyinc/pointy"
+	"github.com/uitml/quimby/internal/resource"
 	"github.com/uitml/quimby/internal/user/reader"
 )
 
@@ -29,15 +31,15 @@ func TestUser_Populate(t *testing.T) {
 			args:   args{path: "./testdata/values.yaml", rdr: &reader.File{}},
 			want: Config{
 				Username: "foo123",
-				ResourceSpec: ResourceSpec{
-					GPU:                    2,
-					GPUPerJob:              1,
-					MemoryPerJob:           16,
-					CPUPerJob:              2,
-					StorageProxyCPURequest: 200,
-					StorageProxyCPULimit:   500,
-					StorageProxyMemory:     256,
-					StorageSize:            500,
+				Spec: &resource.Spec{
+					GPU:                    pointy.Int64(2),
+					GPUPerJob:              pointy.Int64(1),
+					MemoryPerJob:           pointy.Int64(16),
+					CPUPerJob:              pointy.Int64(2),
+					StorageProxyCPURequest: pointy.Int64(200),
+					StorageProxyCPULimit:   pointy.Int64(500),
+					StorageProxyMemory:     pointy.Int64(256),
+					StorageSize:            pointy.Int64(500),
 				},
 			},
 			wantErr: false,
@@ -49,16 +51,8 @@ func TestUser_Populate(t *testing.T) {
 			args:   args{path: "./testdata/valuess.yaml", rdr: &reader.File{}},
 			want: Config{
 				Username: "foo123",
-				ResourceSpec: ResourceSpec{
-					GPU:                    0,
-					GPUPerJob:              0,
-					MemoryPerJob:           0,
-					CPUPerJob:              0,
-					StorageProxyCPURequest: 0,
-					StorageProxyCPULimit:   0,
-					StorageProxyMemory:     0,
-					StorageSize:            0,
-				},
+				Spec:     nil,
+				Metadata: nil,
 			},
 			wantErr: true,
 		},
@@ -69,11 +63,10 @@ func TestUser_Populate(t *testing.T) {
 				Username: tt.fields.Username,
 			}
 			err := usr.Populate(tt.args.path, tt.args.rdr)
-			//assert.Equal(t, tt.want.Username, usr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("User.Populate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if *usr != tt.want {
+			if !reflect.DeepEqual(*usr, tt.want) {
 				t.Errorf("User.Populate() usr = %v, wantUsr %v", *usr, tt.want)
 			}
 		})
@@ -102,15 +95,15 @@ func TestGenerateConfig(t *testing.T) {
 				rdr:  &reader.File{},
 				usr: Config{
 					Username: "foo123",
-					ResourceSpec: ResourceSpec{
-						GPU:                    2,
-						GPUPerJob:              1,
-						MemoryPerJob:           16,
-						CPUPerJob:              2,
-						StorageProxyCPURequest: 200,
-						StorageProxyCPULimit:   500,
-						StorageProxyMemory:     256,
-						StorageSize:            500,
+					Spec: &resource.Spec{
+						GPU:                    pointy.Int64(2),
+						GPUPerJob:              pointy.Int64(1),
+						MemoryPerJob:           pointy.Int64(16),
+						CPUPerJob:              pointy.Int64(2),
+						StorageProxyCPURequest: pointy.Int64(200),
+						StorageProxyCPULimit:   pointy.Int64(500),
+						StorageProxyMemory:     pointy.Int64(256),
+						StorageSize:            pointy.Int64(500),
 					},
 				},
 			},
@@ -125,15 +118,15 @@ func TestGenerateConfig(t *testing.T) {
 				rdr:  &reader.File{},
 				usr: Config{
 					Username: "foo123",
-					ResourceSpec: ResourceSpec{
-						GPU:                    2,
-						GPUPerJob:              1,
-						MemoryPerJob:           16,
-						CPUPerJob:              2,
-						StorageProxyCPURequest: 200,
-						StorageProxyCPULimit:   500,
-						StorageProxyMemory:     256,
-						StorageSize:            500,
+					Spec: &resource.Spec{
+						GPU:                    pointy.Int64(2),
+						GPUPerJob:              pointy.Int64(1),
+						MemoryPerJob:           pointy.Int64(16),
+						CPUPerJob:              pointy.Int64(2),
+						StorageProxyCPURequest: pointy.Int64(200),
+						StorageProxyCPULimit:   pointy.Int64(500),
+						StorageProxyMemory:     pointy.Int64(256),
+						StorageSize:            pointy.Int64(500),
 					},
 				},
 			},

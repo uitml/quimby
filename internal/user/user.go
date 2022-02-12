@@ -10,6 +10,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	internalvalidate "github.com/uitml/quimby/internal/validate"
 
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +21,7 @@ type User struct {
 	fullname      string
 	email         string
 	usertype      string
-	ResourceQuota k8s.ResourceQuota
+	ResourceQuota resource.Quota
 }
 
 func FromNamespace(namespace corev1.Namespace) User {
@@ -40,7 +41,7 @@ func FromNamespace(namespace corev1.Namespace) User {
 func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	var userList []User
 
-	namespaceList, err := c.GetNamespaceList()
+	namespaceList, err := c.NamespaceList()
 
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 
 			// Will only poll for resources if flag is true (for efficiency)
 			if listResources {
-				newUser.ResourceQuota, err = c.GetResourceQuota(namespace.Name)
+				newUser.ResourceQuota, err = c.Quota(namespace.Name)
 				if err != nil {
 					return nil, err
 				}

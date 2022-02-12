@@ -15,6 +15,7 @@ func newEditCmd() *cobra.Command {
 		RunE: func(*cobra.Command, []string) error { return fmt.Errorf("missing type argument") },
 	}
 	editCmd.AddCommand(edit.NewMetaCmd())
+	editCmd.AddCommand(edit.NewQuotaCmd())
 
 	return editCmd
 }

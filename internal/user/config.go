@@ -2,34 +2,25 @@ package user
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/uitml/quimby/internal/resource"
 	"github.com/uitml/quimby/internal/user/reader"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Username     string `json:"username,omitempty"`
-	Metadata     `json:",inline,omitempty"`
-	ResourceSpec `json:",inline,omitempty"`
-}
-
-type ResourceSpec struct {
-	GPU                    int `json:"gpu,inline,omitempty"`
-	GPUPerJob              int `json:"gpuperjob,inline,omitempty"`
-	MemoryPerJob           int `json:"memoryperjob,inline,omitempty"`
-	CPUPerJob              int `json:"cpuperjob,inline,omitempty"`
-	StorageProxyCPURequest int `json:"storageproxycpurequest,inline,omitempty"`
-	StorageProxyCPULimit   int `json:"storageproxycpulimit,inline,omitempty"`
-	StorageProxyMemory     int `json:"storageproxymemory,inline,omitempty"`
-	StorageSize            int `json:"storagesize,inline,omitempty"`
+	Username       string `yaml:"username,omitempty"`
+	*Metadata      `yaml:"metadata,omitempty"`
+	*resource.Spec `yaml:"resourcespec,omitempty"`
 }
 
 type Metadata struct {
-	Fullname string `json:"fullname,omitempty,inline"`
-	Email    string `json:"email,omitempty,inline"`
-	Usertype string `json:"usertype,omitempty,inline"`
+	Fullname string `yaml:"fullname,omitempty"`
+	Email    string `yaml:"email,omitempty"`
+	Usertype string `yaml:"usertype,omitempty"`
 }
 
 // Populates usr given a path to a yaml file using the Reader
@@ -38,6 +29,7 @@ func (usr *Config) Populate(path string, rdr reader.Config) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(body))
 	err = yaml.Unmarshal(body, usr)
 	if err != nil {
 		return err

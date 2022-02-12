@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -14,10 +15,10 @@ func newFakeResourceUser(CPUMax int64, CPUUsed int64, memoryMax int64, memoryUse
 		fullname: "",
 		email:    "",
 		usertype: "",
-		ResourceQuota: k8s.ResourceQuota{
-			CPU:     k8s.ResourceSummary{Max: CPUMax, Used: CPUUsed},
-			Memory:  k8s.ResourceSummary{Max: memoryMax * 1024 * 1024 * 1024, Used: memoryUsed},
-			GPU:     k8s.ResourceSummary{Max: GPUMax, Used: GPUUsed},
+		ResourceQuota: resource.Quota{
+			CPU:     resource.Summary{Max: CPUMax, Used: CPUUsed},
+			Memory:  resource.Summary{Max: memoryMax * 1024 * 1024 * 1024, Used: memoryUsed},
+			GPU:     resource.Summary{Max: GPUMax, Used: GPUUsed},
 			Storage: storage,
 		},
 	}

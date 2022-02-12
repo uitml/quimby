@@ -2,11 +2,11 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	apiresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,24 +14,6 @@ const (
 	ResourceRequestsGPU corev1.ResourceName = "requests.nvidia.com/gpu"
 	ResourceGPU         corev1.ResourceName = "nvidia.com/gpu"
 )
-
-type ResourceSummary struct {
-	Max  int64
-	Used int64
-}
-
-type ResourceQuota struct {
-	GPU     ResourceSummary
-	CPU     ResourceSummary
-	Memory  ResourceSummary
-	Storage int64
-}
-
-type ResourceRequest struct {
-	GPU    int64
-	CPU    int64
-	Memory int64
-}
 
 func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName) (map[corev1.ResourceName]int64, error) {
 	result := make(map[corev1.ResourceName]int64)
@@ -54,22 +36,22 @@ func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName
 	return result, nil
 }
 
-func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
+func (c *Client) Quota(namespace string) (resource.Quota, error) {
 	// Compute
 	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return ResourceQuota{}, err
+		return resource.Quota{}, err
 	}
 
 	// Check if user exists
 	if len(res.Items) == 0 {
-		return ResourceQuota{}, errors.New("user has no resources or does not exist")
+		return resource.Quota{}, fmt.Errorf("user %s has no resources or does not exist", namespace)
 	}
 
 	// Storage
 	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return ResourceQuota{}, err
+		return resource.Quota{}, err
 	}
 
 	// Convert all resources to Int64
@@ -80,7 +62,7 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 		corev1.ResourceRequestsMemory,
 	)
 	if err != nil {
-		return ResourceQuota{}, err
+		return resource.Quota{}, err
 	}
 
 	usedResources, err := resourceAsInt64(
@@ -90,7 +72,7 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 		corev1.ResourceRequestsMemory,
 	)
 	if err != nil {
-		return ResourceQuota{}, err
+		return resource.Quota{}, err
 	}
 
 	storage, err := resourceAsInt64(
@@ -98,19 +80,19 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 		corev1.ResourceStorage,
 	)
 	if err != nil {
-		return ResourceQuota{}, err
+		return resource.Quota{}, err
 	}
 
-	rq := ResourceQuota{
-		GPU: ResourceSummary{
+	rq := resource.Quota{
+		GPU: resource.Summary{
 			Max:  maxResources[ResourceRequestsGPU],
 			Used: usedResources[ResourceRequestsGPU],
 		},
-		CPU: ResourceSummary{
+		CPU: resource.Summary{
 			Max:  maxResources[corev1.ResourceRequestsCPU],
 			Used: usedResources[corev1.ResourceRequestsCPU],
 		},
-		Memory: ResourceSummary{
+		Memory: resource.Summary{
 			Max:  maxResources[corev1.ResourceRequestsMemory],
 			Used: usedResources[corev1.ResourceRequestsMemory],
 		},
@@ -120,10 +102,10 @@ func (c *Client) GetResourceQuota(namespace string) (ResourceQuota, error) {
 	return rq, nil
 }
 
-func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
+func (c *Client) DefaultRequest(namespace string) (resource.Request, error) {
 	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return ResourceRequest{}, err
+		return resource.Request{}, err
 	}
 
 	limits, err := resourceAsInt64(
@@ -133,10 +115,10 @@ func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
 		corev1.ResourceRequestsMemory,
 	)
 	if err != nil {
-		return ResourceRequest{}, err
+		return resource.Request{}, err
 	}
 
-	rr := ResourceRequest{
+	rr := resource.Request{
 		GPU:    limits[ResourceGPU],
 		CPU:    limits[corev1.ResourceCPU],
 		Memory: limits[corev1.ResourceMemory],
@@ -145,14 +127,14 @@ func (c *Client) GetDefaultRequest(namespace string) (ResourceRequest, error) {
 	return rr, nil
 }
 
-func (c *Client) GetTotalGPUs() (ResourceSummary, error) {
+func (c *Client) TotalGPUs() (resource.Summary, error) {
 	var totalGPUs int64 = 0
 	// TODO: Find out how to get used GPUs from node info. Haven't found it yet, so now it's being counted from the user info.
 	var usedGPUs int64 = 0
 
 	nodes, err := c.Clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return ResourceSummary{}, err
+		return resource.Summary{}, err
 	}
 
 	for _, node := range nodes.Items {
@@ -164,7 +146,7 @@ func (c *Client) GetTotalGPUs() (ResourceSummary, error) {
 		totalGPUs += g[ResourceGPU]
 	}
 
-	return ResourceSummary{Max: totalGPUs, Used: usedGPUs}, nil
+	return resource.Summary{Max: totalGPUs, Used: usedGPUs}, nil
 }
 
 func NewResourceQuota(namespace string, cpu int64, gpu int64, memory int64) *corev1.ResourceQuota {
@@ -175,10 +157,10 @@ func NewResourceQuota(namespace string, cpu int64, gpu int64, memory int64) *cor
 			Namespace: namespace,
 		},
 		Spec: corev1.ResourceQuotaSpec{
-			Hard: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceRequestsCPU:    *resource.NewQuantity(cpu, resource.DecimalSI),
-				ResourceRequestsGPU:           *resource.NewQuantity(gpu, resource.DecimalSI),
-				corev1.ResourceRequestsMemory: *resource.NewQuantity((memory*1024+256)*1024*1024, resource.BinarySI),
+			Hard: map[corev1.ResourceName]apiresource.Quantity{
+				corev1.ResourceRequestsCPU:    *apiresource.NewQuantity(cpu, apiresource.DecimalSI),
+				ResourceRequestsGPU:           *apiresource.NewQuantity(gpu, apiresource.DecimalSI),
+				corev1.ResourceRequestsMemory: *apiresource.NewQuantity((memory*1024+256)*1024*1024, apiresource.BinarySI),
 			},
 		},
 	}
@@ -194,10 +176,10 @@ func NewPVC(namespace string, size int64) *corev1.PersistentVolumeClaim {
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{"ReadWriteMany"},
 			Resources: corev1.ResourceRequirements{
-				Requests: map[corev1.ResourceName]resource.Quantity{
-					corev1.ResourceStorage: *resource.NewQuantity(
+				Requests: map[corev1.ResourceName]apiresource.Quantity{
+					corev1.ResourceStorage: *apiresource.NewQuantity(
 						size*1024*1024*1024,
-						resource.BinarySI,
+						apiresource.BinarySI,
 					),
 				},
 			},

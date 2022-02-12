@@ -20,7 +20,7 @@ const (
 	LabelUserType          string = "springfield.uit.no/user-type"
 )
 
-func (c *Client) GetNamespaceList() (*corev1.NamespaceList, error) {
+func (c *Client) NamespaceList() (*corev1.NamespaceList, error) {
 	namespaceList, err := c.Clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (c *Client) GetNamespaceList() (*corev1.NamespaceList, error) {
 }
 
 func (c *Client) Namespace(username string) (*corev1.Namespace, error) {
-	namespaces, err := c.GetNamespaceList()
+	namespaces, err := c.NamespaceList()
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func newLimitRange(username string, defaultCPU string, defaultMemory string, def
 }
 
 func (c *Client) UserExists(u string) (bool, error) {
-	namespaces, err := c.GetNamespaceList()
+	namespaces, err := c.NamespaceList()
 	if err != nil {
 		return false, err
 	}

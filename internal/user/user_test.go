@@ -10,6 +10,7 @@ import (
 
 	internalfake "github.com/uitml/quimby/internal/fake"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -91,10 +92,10 @@ func TestPopulateList(t *testing.T) {
 					fullname: "Foo Bar",
 					email:    "foo@bar.baz",
 					usertype: "admin",
-					ResourceQuota: k8s.ResourceQuota{
-						CPU:     k8s.ResourceSummary{Max: 4500, Used: 2250},
-						GPU:     k8s.ResourceSummary{Max: 2, Used: 1},
-						Memory:  k8s.ResourceSummary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
+					ResourceQuota: resource.Quota{
+						CPU:     resource.Summary{Max: 4500, Used: 2250},
+						GPU:     resource.Summary{Max: 2, Used: 1},
+						Memory:  resource.Summary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
 						Storage: 500 * 1024 * 1024 * 1024,
 					},
 				},
@@ -121,7 +122,7 @@ func TestPopulateList(t *testing.T) {
 					fullname:      "Foo Bar",
 					email:         "foo@bar.baz",
 					usertype:      "admin",
-					ResourceQuota: k8s.ResourceQuota{},
+					ResourceQuota: resource.Quota{},
 				},
 			},
 			wantErr: false,

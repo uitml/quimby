@@ -1,12 +1,9 @@
 package edit
 
 import (
-	"io/ioutil"
-	"os"
-	"os/exec"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
 	"github.com/uitml/quimby/internal/user"
 	"github.com/uitml/quimby/internal/validate"
@@ -49,32 +46,11 @@ func RunMeta(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// First test: open a temporary file with VI and read the saved file.
-	tmp, err := ioutil.TempFile("", "")
-	if err != nil {
-		return err
-	}
-	defer tmp.Close()
-
-	_, err = tmp.Write(y)
+	r, err := cli.Editor(y)
 	if err != nil {
 		return err
 	}
 
-	// Open the file in VI and read the result
-	command := exec.Command("vi", tmp.Name())
-	command.Stdin = os.Stdin
-	command.Stdout = os.Stdout
-	err = command.Run()
-	if err != nil {
-		return err
-	}
-
-	// Process the file and apply the values
-	r, err := ioutil.ReadFile(tmp.Name())
-	if err != nil {
-		return err
-	}
 	err = yaml.Unmarshal(r, md)
 	if err != nil {
 		return err
