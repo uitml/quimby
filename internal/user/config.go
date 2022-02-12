@@ -10,19 +10,30 @@ import (
 )
 
 type Config struct {
-	Username               string `yaml:"Username,omitempty"`
-	GPU                    int    `yaml:"GPU"`
-	GPUPerJob              int    `yaml:"GPUPerJob"`
-	MemoryPerJob           int    `yaml:"MemoryPerJob"`
-	CPUPerJob              int    `yaml:"CPUPerJob"`
-	StorageProxyCPURequest int    `yaml:"StorageProxyCPURequest"`
-	StorageProxyCPULimit   int    `yaml:"StorageProxyCPULimit"`
-	StorageProxyMemory     int    `yaml:"StorageProxyMemory"`
-	StorageSize            int    `yaml:"StorageSize"`
+	Username     string `json:"username,omitempty"`
+	Metadata     `json:",inline,omitempty"`
+	ResourceSpec `json:",inline,omitempty"`
+}
+
+type ResourceSpec struct {
+	GPU                    int `json:"gpu,inline,omitempty"`
+	GPUPerJob              int `json:"gpuperjob,inline,omitempty"`
+	MemoryPerJob           int `json:"memoryperjob,inline,omitempty"`
+	CPUPerJob              int `json:"cpuperjob,inline,omitempty"`
+	StorageProxyCPURequest int `json:"storageproxycpurequest,inline,omitempty"`
+	StorageProxyCPULimit   int `json:"storageproxycpulimit,inline,omitempty"`
+	StorageProxyMemory     int `json:"storageproxymemory,inline,omitempty"`
+	StorageSize            int `json:"storagesize,inline,omitempty"`
+}
+
+type Metadata struct {
+	Fullname string `json:"fullname,omitempty,inline"`
+	Email    string `json:"email,omitempty,inline"`
+	Usertype string `json:"usertype,omitempty,inline"`
 }
 
 // Populates usr given a path to a yaml file using the Reader
-func (usr *Config) DefaultValues(path string, rdr reader.Config) error {
+func (usr *Config) Populate(path string, rdr reader.Config) error {
 	body, err := rdr.Read(path)
 	if err != nil {
 		return err

@@ -17,9 +17,9 @@ import (
 
 type User struct {
 	Username      string
-	Fullname      string
-	Email         string
-	Usertype      string
+	fullname      string
+	email         string
+	usertype      string
 	ResourceQuota k8s.ResourceQuota
 }
 
@@ -29,9 +29,9 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// Then this could be polled and populated in the list for users with default values (empty annotation)
 	usr := User{
 		Username: namespace.Name,
-		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
-		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
-		Usertype: namespace.Labels[k8s.LabelUserType],
+		fullname: namespace.Annotations[k8s.AnnotationUserFullname],
+		email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
+		usertype: namespace.Labels[k8s.LabelUserType],
 	}
 
 	return usr
@@ -75,9 +75,9 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	for i, usr := range userList {
 		table = append(table, []string{
 			usr.Username,
-			usr.Fullname,
-			usr.Email,
-			usr.Usertype,
+			usr.fullname,
+			usr.email,
+			usr.usertype,
 		})
 
 		// Only show resources if the user has asked for it
@@ -91,4 +91,12 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	}
 
 	return table, nil
+}
+
+func (usr *User) Metadata() *Metadata {
+	return &Metadata{
+		Fullname: usr.fullname,
+		Email:    usr.email,
+		Usertype: usr.usertype,
+	}
 }

@@ -3,12 +3,15 @@ package k8s
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/uitml/quimby/internal/validate"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 const (
@@ -24,6 +27,22 @@ func (c *Client) GetNamespaceList() (*corev1.NamespaceList, error) {
 	}
 
 	return namespaceList, nil
+}
+
+func (c *Client) Namespace(username string) (*corev1.Namespace, error) {
+	namespaces, err := c.GetNamespaceList()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, namespace := range namespaces.Items {
+		if validate.Username(namespace.Name) && namespace.Name == username {
+			return &namespace, nil
+		}
+	}
+
+	return nil, fmt.Errorf("user %s does not exist", username)
+
 }
 
 func (c *Client) NewUser(username string, fullname string, email string, userType string) error {
@@ -155,5 +174,42 @@ func (c *Client) DeleteUser(u string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *Client) ApplyMetaData(namespace string, fullName string, email string, userType string) error {
+	kind := "Namespace"
+	apiVersion := "v1"
+
+	// Configure patch
+	config := applycorev1.NamespaceApplyConfiguration{
+		TypeMetaApplyConfiguration: applymetav1.TypeMetaApplyConfiguration{
+			Kind:       &kind,
+			APIVersion: &apiVersion,
+		},
+		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
+			Name:      &namespace,
+			Namespace: &namespace,
+			Labels:    map[string]string{LabelUserType: userType},
+			Annotations: map[string]string{
+				AnnotationUserFullname: fullName,
+				AnnotationUserEmail:    email,
+			},
+		},
+	}
+
+	// Using server-side apply.
+	// Fields are managed and have an owner. Set field manager to "kubectl" in order
+	// to avoid any conflicts or hacks (e.g. having to set Force=true).
+	// See https://kubernetes.io/docs/reference/using-api/server-side-apply/#field-management
+	_, err := c.Clientset.CoreV1().Namespaces().Apply(
+		context.TODO(),
+		&config,
+		metav1.ApplyOptions{FieldManager: "kubectl"},
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

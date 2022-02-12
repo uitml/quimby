@@ -17,7 +17,6 @@ type Github struct {
 func basicAuth(username string, token string) string {
 	auth := username + ":" + token
 	return base64.StdEncoding.EncodeToString([]byte(auth))
-	//return auth
 }
 
 // Reads default user config from a specified github repo. This can be private, so authentication is needed.

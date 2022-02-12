@@ -1,7 +1,3 @@
-/*
-TODO: Implement test
-*/
-
 package cmd
 
 import (

@@ -33,7 +33,7 @@ func TestFromNamespace(t *testing.T) {
 					map[string]string{k8s.AnnotationUserFullname: "Foo Bar", k8s.AnnotationUserEmail: "foo@bar.baz"},
 				),
 			},
-			want: User{Username: "fba000", Fullname: "Foo Bar", Email: "foo@bar.baz", Usertype: "admin"},
+			want: User{Username: "fba000", fullname: "Foo Bar", email: "foo@bar.baz", usertype: "admin"},
 		},
 		{
 			name: "missing annotations and labels",
@@ -44,7 +44,7 @@ func TestFromNamespace(t *testing.T) {
 					map[string]string{},
 				),
 			},
-			want: User{Username: "boo001", Fullname: "", Email: "boo001@post.uit.no", Usertype: ""},
+			want: User{Username: "boo001", fullname: "", email: "boo001@post.uit.no", usertype: ""},
 		},
 	}
 	for _, tt := range tests {
@@ -88,9 +88,9 @@ func TestPopulateList(t *testing.T) {
 			want: []User{
 				{
 					Username: "foo123",
-					Fullname: "Foo Bar",
-					Email:    "foo@bar.baz",
-					Usertype: "admin",
+					fullname: "Foo Bar",
+					email:    "foo@bar.baz",
+					usertype: "admin",
 					ResourceQuota: k8s.ResourceQuota{
 						CPU:     k8s.ResourceSummary{Max: 4500, Used: 2250},
 						GPU:     k8s.ResourceSummary{Max: 2, Used: 1},
@@ -118,9 +118,9 @@ func TestPopulateList(t *testing.T) {
 			want: []User{
 				{
 					Username:      "foo123",
-					Fullname:      "Foo Bar",
-					Email:         "foo@bar.baz",
-					Usertype:      "admin",
+					fullname:      "Foo Bar",
+					email:         "foo@bar.baz",
+					usertype:      "admin",
 					ResourceQuota: k8s.ResourceQuota{},
 				},
 			},

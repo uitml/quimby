@@ -22,6 +22,7 @@ func newCreateCmd() *cobra.Command {
 	var createCmd = &cobra.Command{
 		Use:   "new",
 		Short: "Create a new Springfield user.",
+		Args:  cobra.ExactArgs(1),
 
 		RunE: RunGetDefault,
 	}
@@ -59,7 +60,7 @@ func RunGetDefault(cmd *cobra.Command, args []string) error {
 		Repo:     conf.GithubRepo,
 	}
 	usrConf := user.Config{Username: username}
-	err = usrConf.DefaultValues(conf.GithubValueDir+"/default-user.yaml", &rdr)
+	err = usrConf.Populate(conf.GithubValueDir+"/default-user.yaml", &rdr)
 	if err != nil {
 		return err
 	}
