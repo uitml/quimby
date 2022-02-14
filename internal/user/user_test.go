@@ -10,6 +10,7 @@ import (
 
 	internalfake "github.com/uitml/quimby/internal/fake"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -33,7 +34,7 @@ func TestFromNamespace(t *testing.T) {
 					map[string]string{k8s.AnnotationUserFullname: "Foo Bar", k8s.AnnotationUserEmail: "foo@bar.baz"},
 				),
 			},
-			want: User{Username: "fba000", Fullname: "Foo Bar", Email: "foo@bar.baz", Usertype: "admin"},
+			want: User{Username: "fba000", fullname: "Foo Bar", email: "foo@bar.baz", usertype: "admin"},
 		},
 		{
 			name: "missing annotations and labels",
@@ -44,7 +45,7 @@ func TestFromNamespace(t *testing.T) {
 					map[string]string{},
 				),
 			},
-			want: User{Username: "boo001", Fullname: "", Email: "boo001@post.uit.no", Usertype: ""},
+			want: User{Username: "boo001", fullname: "", email: "boo001@post.uit.no", usertype: ""},
 		},
 	}
 	for _, tt := range tests {
@@ -88,13 +89,13 @@ func TestPopulateList(t *testing.T) {
 			want: []User{
 				{
 					Username: "foo123",
-					Fullname: "Foo Bar",
-					Email:    "foo@bar.baz",
-					Usertype: "admin",
-					ResourceQuota: k8s.ResourceQuota{
-						CPU:     k8s.ResourceSummary{Max: 4500, Used: 2250},
-						GPU:     k8s.ResourceSummary{Max: 2, Used: 1},
-						Memory:  k8s.ResourceSummary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
+					fullname: "Foo Bar",
+					email:    "foo@bar.baz",
+					usertype: "admin",
+					ResourceQuota: resource.Quota{
+						CPU:     resource.Summary{Max: 4500000, Used: 2250000},
+						GPU:     resource.Summary{Max: 2, Used: 1},
+						Memory:  resource.Summary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
 						Storage: 500 * 1024 * 1024 * 1024,
 					},
 				},
@@ -118,10 +119,10 @@ func TestPopulateList(t *testing.T) {
 			want: []User{
 				{
 					Username:      "foo123",
-					Fullname:      "Foo Bar",
-					Email:         "foo@bar.baz",
-					Usertype:      "admin",
-					ResourceQuota: k8s.ResourceQuota{},
+					fullname:      "Foo Bar",
+					email:         "foo@bar.baz",
+					usertype:      "admin",
+					ResourceQuota: resource.Quota{},
 				},
 			},
 			wantErr: false,

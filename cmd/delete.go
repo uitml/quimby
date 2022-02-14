@@ -15,6 +15,7 @@ func newDeleteCmd() *cobra.Command {
 	var deleteCmd = &cobra.Command{
 		Use:   "rm",
 		Short: "Delete user",
+		Args:  cobra.ExactArgs(1),
 
 		RunE: RunDelete,
 	}
@@ -27,7 +28,7 @@ func RunDelete(cmd *cobra.Command, args []string) error {
 
 	// Validate input
 	if !validate.Username(user) {
-		return errors.Errorf("%s is not a valid username", user)
+		return errors.Errorf("invalid username: %s", user)
 	}
 
 	client, err := k8s.NewClient()

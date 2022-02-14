@@ -1,18 +1,21 @@
 package k8s
 
 import (
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 type ResourceClient interface {
-	GetNamespaceList() (*corev1.NamespaceList, error)
-	GetResourceQuota(string) (ResourceQuota, error)
-	GetDefaultRequest(string) (ResourceRequest, error)
-	NewUser(string, string, string, string) error
-	NewSimpleUser(string) error
-	GetTotalGPUs() (ResourceSummary, error)
+	NamespaceList() (*corev1.NamespaceList, error)
+	Quota(string) (resource.Quota, error)
+	Spec(string) (*resource.Spec, error)
+	DefaultRequest(string) (resource.Request, error)
+	Namespace(string) (*corev1.Namespace, error)
+	ApplyMetadata(string, string, string, string) error
+	Apply(string, []byte) error
+	TotalGPUs() (resource.Summary, error)
 	UserExists(string) (bool, error)
 	DeleteUser(string) error
 }

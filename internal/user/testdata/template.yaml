@@ -1,7 +1,8 @@
 name: {{.Username}}
 requests.cpu: {{add (mul .CPUPerJob .GPU 1000) .StorageProxyCPULimit}}m
-requests.memory: {{add (mul .MemoryPerJob .GPU 1024) .StorageProxyMemory}}Mi
+requests.memory: {{add (mul .MaxMemoryPerJob .GPU 1024) .StorageProxyMemory}}Mi
 requests.nvidia.com/gpu: {{.GPU}}
 nvidia.com/gpu: {{.GPUPerJob}}
 storage: {{.StorageSize}}Gi
 cpu: {{.StorageProxyCPURequest}}m
+memory: {{.DefaultMemoryPerJob}}Gi

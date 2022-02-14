@@ -5,19 +5,20 @@ import (
 	"testing"
 
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func newFakeResourceUser(CPUMax int64, CPUUsed int64, memoryMax int64, memoryUsed int64, GPUMax int64, GPUUsed int64, storage int64) User {
 	usr := User{
 		Username: "",
-		Fullname: "",
-		Email:    "",
-		Usertype: "",
-		ResourceQuota: k8s.ResourceQuota{
-			CPU:     k8s.ResourceSummary{Max: CPUMax, Used: CPUUsed},
-			Memory:  k8s.ResourceSummary{Max: memoryMax * 1024 * 1024 * 1024, Used: memoryUsed},
-			GPU:     k8s.ResourceSummary{Max: GPUMax, Used: GPUUsed},
+		fullname: "",
+		email:    "",
+		usertype: "",
+		ResourceQuota: resource.Quota{
+			CPU:     resource.Summary{Max: CPUMax, Used: CPUUsed},
+			Memory:  resource.Summary{Max: memoryMax * 1024 * 1024 * 1024, Used: memoryUsed},
+			GPU:     resource.Summary{Max: GPUMax, Used: GPUUsed},
 			Storage: storage,
 		},
 	}
@@ -105,15 +106,15 @@ func TestTotalResourcesUsed(t *testing.T) {
 				userList: []User{
 					{
 						Username: "foo123",
-						Fullname: "Foo Bar",
-						Email:    "foo@bar.baz",
-						Usertype: "alumni",
+						fullname: "Foo Bar",
+						email:    "foo@bar.baz",
+						usertype: "alumni",
 					},
 					{
 						Username: "bar321",
-						Fullname: "Bar Baz",
-						Email:    "bar@baz.com",
-						Usertype: "student",
+						fullname: "Bar Baz",
+						email:    "bar@baz.com",
+						usertype: "student",
 					},
 				},
 			},
@@ -140,9 +141,9 @@ func TestTotalResourcesUsed(t *testing.T) {
 					),
 					{
 						Username: "bar321",
-						Fullname: "Bar Baz",
-						Email:    "bar@baz.com",
-						Usertype: "student",
+						fullname: "Bar Baz",
+						email:    "bar@baz.com",
+						usertype: "student",
 					},
 				},
 			},

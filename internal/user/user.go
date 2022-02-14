@@ -10,6 +10,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	internalvalidate "github.com/uitml/quimby/internal/validate"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,10 +18,10 @@ import (
 
 type User struct {
 	Username      string
-	Fullname      string
-	Email         string
-	Usertype      string
-	ResourceQuota k8s.ResourceQuota
+	fullname      string
+	email         string
+	usertype      string
+	ResourceQuota resource.Quota
 }
 
 func FromNamespace(namespace corev1.Namespace) User {
@@ -29,9 +30,9 @@ func FromNamespace(namespace corev1.Namespace) User {
 	// Then this could be polled and populated in the list for users with default values (empty annotation)
 	usr := User{
 		Username: namespace.Name,
-		Fullname: namespace.Annotations[k8s.AnnotationUserFullname],
-		Email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
-		Usertype: namespace.Labels[k8s.LabelUserType],
+		fullname: namespace.Annotations[k8s.AnnotationUserFullname],
+		email:    internalvalidate.DefaultIfEmpty(namespace.Annotations[k8s.AnnotationUserEmail], namespace.Name+"@post.uit.no"),
+		usertype: namespace.Labels[k8s.LabelUserType],
 	}
 
 	return usr
@@ -40,7 +41,7 @@ func FromNamespace(namespace corev1.Namespace) User {
 func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 	var userList []User
 
-	namespaceList, err := c.GetNamespaceList()
+	namespaceList, err := c.NamespaceList()
 
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func PopulateList(c k8s.ResourceClient, listResources bool) ([]User, error) {
 
 			// Will only poll for resources if flag is true (for efficiency)
 			if listResources {
-				newUser.ResourceQuota, err = c.GetResourceQuota(namespace.Name)
+				newUser.ResourceQuota, err = c.Quota(namespace.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -75,9 +76,9 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	for i, usr := range userList {
 		table = append(table, []string{
 			usr.Username,
-			usr.Fullname,
-			usr.Email,
-			usr.Usertype,
+			usr.fullname,
+			usr.email,
+			usr.usertype,
 		})
 
 		// Only show resources if the user has asked for it
@@ -91,4 +92,12 @@ func ListToTable(userList []User, listResources bool) ([][]string, error) {
 	}
 
 	return table, nil
+}
+
+func (usr *User) Metadata() *Metadata {
+	return &Metadata{
+		Fullname: usr.fullname,
+		Email:    usr.email,
+		Usertype: usr.usertype,
+	}
 }

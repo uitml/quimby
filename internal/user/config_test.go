@@ -4,20 +4,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openlyinc/pointy"
+	"github.com/uitml/quimby/internal/resource"
 	"github.com/uitml/quimby/internal/user/reader"
 )
 
-func TestUser_DefaultValues(t *testing.T) {
+func TestUser_Populate(t *testing.T) {
 	type fields struct {
-		Username               string
-		GPU                    int
-		GPUPerJob              int
-		MemoryPerJob           int
-		CPUPerJob              int
-		StorageProxyCPURequest int
-		StorageProxyCPULimit   int
-		StorageProxyMemory     int
-		StorageSize            int
+		Username string
 	}
 	type args struct {
 		path string
@@ -36,15 +30,18 @@ func TestUser_DefaultValues(t *testing.T) {
 			fields: fields{Username: "foo123"},
 			args:   args{path: "./testdata/values.yaml", rdr: &reader.File{}},
 			want: Config{
-				Username:               "foo123",
-				GPU:                    2,
-				GPUPerJob:              1,
-				MemoryPerJob:           16,
-				CPUPerJob:              2,
-				StorageProxyCPURequest: 200,
-				StorageProxyCPULimit:   500,
-				StorageProxyMemory:     256,
-				StorageSize:            500,
+				Username: "foo123",
+				Spec: &resource.Spec{
+					GPU:                    pointy.Int64(2),
+					GPUPerJob:              pointy.Int64(1),
+					MaxMemoryPerJob:        pointy.Int64(16),
+					DefaultMemoryPerJob:    pointy.Int64(12),
+					CPUPerJob:              pointy.Int64(2),
+					StorageProxyCPURequest: pointy.Int64(200),
+					StorageProxyCPULimit:   pointy.Int64(500),
+					StorageProxyMemory:     pointy.Int64(256),
+					StorageSize:            pointy.Int64(500),
+				},
 			},
 			wantErr: false,
 		},
@@ -54,15 +51,9 @@ func TestUser_DefaultValues(t *testing.T) {
 			fields: fields{Username: "foo123"},
 			args:   args{path: "./testdata/valuess.yaml", rdr: &reader.File{}},
 			want: Config{
-				Username:               "foo123",
-				GPU:                    0,
-				GPUPerJob:              0,
-				MemoryPerJob:           0,
-				CPUPerJob:              0,
-				StorageProxyCPURequest: 0,
-				StorageProxyCPULimit:   0,
-				StorageProxyMemory:     0,
-				StorageSize:            0,
+				Username: "foo123",
+				Spec:     nil,
+				Metadata: nil,
 			},
 			wantErr: true,
 		},
@@ -70,22 +61,14 @@ func TestUser_DefaultValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			usr := &Config{
-				Username:               tt.fields.Username,
-				GPU:                    tt.fields.GPU,
-				GPUPerJob:              tt.fields.GPUPerJob,
-				MemoryPerJob:           tt.fields.MemoryPerJob,
-				CPUPerJob:              tt.fields.CPUPerJob,
-				StorageProxyCPURequest: tt.fields.StorageProxyCPURequest,
-				StorageProxyCPULimit:   tt.fields.StorageProxyCPULimit,
-				StorageProxyMemory:     tt.fields.StorageProxyMemory,
-				StorageSize:            tt.fields.StorageSize,
+				Username: tt.fields.Username,
 			}
-			err := usr.DefaultValues(tt.args.path, tt.args.rdr)
+			err := usr.Populate(tt.args.path, tt.args.rdr)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("User.DefaultValues() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("User.Populate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if *usr != tt.want {
-				t.Errorf("User.DefaultValues() usr = %v, wantUsr %v", *usr, tt.want)
+			if !reflect.DeepEqual(*usr, tt.want) {
+				t.Errorf("User.Populate() usr = %v, wantUsr %v", *usr, tt.want)
 			}
 		})
 	}
@@ -112,15 +95,18 @@ func TestGenerateConfig(t *testing.T) {
 				path: "./testdata/template.yaml",
 				rdr:  &reader.File{},
 				usr: Config{
-					Username:               "foo123",
-					GPU:                    2,
-					GPUPerJob:              1,
-					MemoryPerJob:           16,
-					CPUPerJob:              2,
-					StorageProxyCPURequest: 200,
-					StorageProxyCPULimit:   500,
-					StorageProxyMemory:     256,
-					StorageSize:            500,
+					Username: "foo123",
+					Spec: &resource.Spec{
+						GPU:                    pointy.Int64(2),
+						GPUPerJob:              pointy.Int64(1),
+						MaxMemoryPerJob:        pointy.Int64(16),
+						DefaultMemoryPerJob:    pointy.Int64(12),
+						CPUPerJob:              pointy.Int64(2),
+						StorageProxyCPURequest: pointy.Int64(200),
+						StorageProxyCPULimit:   pointy.Int64(500),
+						StorageProxyMemory:     pointy.Int64(256),
+						StorageSize:            pointy.Int64(500),
+					},
 				},
 			},
 			want:    trueData,
@@ -133,15 +119,18 @@ func TestGenerateConfig(t *testing.T) {
 				path: "./testdata/templatefoo.yaml",
 				rdr:  &reader.File{},
 				usr: Config{
-					Username:               "foo123",
-					GPU:                    2,
-					GPUPerJob:              1,
-					MemoryPerJob:           16,
-					CPUPerJob:              2,
-					StorageProxyCPURequest: 200,
-					StorageProxyCPULimit:   500,
-					StorageProxyMemory:     256,
-					StorageSize:            500,
+					Username: "foo123",
+					Spec: &resource.Spec{
+						GPU:                    pointy.Int64(2),
+						GPUPerJob:              pointy.Int64(1),
+						MaxMemoryPerJob:        pointy.Int64(16),
+						DefaultMemoryPerJob:    pointy.Int64(12),
+						CPUPerJob:              pointy.Int64(2),
+						StorageProxyCPURequest: pointy.Int64(200),
+						StorageProxyCPULimit:   pointy.Int64(500),
+						StorageProxyMemory:     pointy.Int64(256),
+						StorageSize:            pointy.Int64(500),
+					},
 				},
 			},
 			want:    nil,

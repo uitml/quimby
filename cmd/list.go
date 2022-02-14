@@ -1,7 +1,3 @@
-/*
-TODO: Implement test
-*/
-
 package cmd
 
 import (
@@ -86,7 +82,7 @@ func renderUsers(userList []user.User, footer [][]string) error {
 }
 
 func makeFooter(userList []user.User, client k8s.ResourceClient) ([][]string, error) {
-	GPUSummary, err := client.GetTotalGPUs()
+	GPUSummary, err := client.TotalGPUs()
 	if err != nil {
 		return nil, err
 	}

@@ -5,3 +5,4 @@ requests.nvidia.com/gpu: 2
 nvidia.com/gpu: 1
 storage: 500Gi
 cpu: 200m
+memory: 12Gi

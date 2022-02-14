@@ -1,8 +1,10 @@
-GPU: 2
-GPUPerJob: 1
-MemoryPerJob: 16
-CPUPerJob: 2
-StorageProxyCPURequest: 200
-StorageProxyCPULimit: 500
-StorageProxyMemory: 256
-StorageSize: 500
+resourcespec:
+  gpu: 2
+  gpuperjob: 1
+  maxmemoryperjob: 16
+  defaultmemoryperjob: 12
+  cpuperjob: 2
+  storageproxycpurequest: 200
+  storageproxycpulimit: 500
+  storageproxymemory: 256
+  storagesize: 500

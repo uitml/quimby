@@ -5,28 +5,30 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/uitml/quimby/internal/resource"
 	"github.com/uitml/quimby/internal/user/reader"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Username               string `yaml:"Username,omitempty"`
-	GPU                    int    `yaml:"GPU"`
-	GPUPerJob              int    `yaml:"GPUPerJob"`
-	MemoryPerJob           int    `yaml:"MemoryPerJob"`
-	CPUPerJob              int    `yaml:"CPUPerJob"`
-	StorageProxyCPURequest int    `yaml:"StorageProxyCPURequest"`
-	StorageProxyCPULimit   int    `yaml:"StorageProxyCPULimit"`
-	StorageProxyMemory     int    `yaml:"StorageProxyMemory"`
-	StorageSize            int    `yaml:"StorageSize"`
+	Username       string `yaml:"username,omitempty"`
+	*Metadata      `yaml:"metadata,omitempty"`
+	*resource.Spec `yaml:"resourcespec,omitempty"`
+}
+
+type Metadata struct {
+	Fullname string `yaml:"fullname"`
+	Email    string `yaml:"email"`
+	Usertype string `yaml:"usertype"`
 }
 
 // Populates usr given a path to a yaml file using the Reader
-func (usr *Config) DefaultValues(path string, rdr reader.Config) error {
+func (usr *Config) Populate(path string, rdr reader.Config) error {
 	body, err := rdr.Read(path)
 	if err != nil {
 		return err
 	}
+
 	err = yaml.Unmarshal(body, usr)
 	if err != nil {
 		return err
