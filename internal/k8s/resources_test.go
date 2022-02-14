@@ -40,9 +40,8 @@ func Test_resourceAsInt64(t *testing.T) {
 				},
 			},
 			want: map[corev1.ResourceName]int64{
-				ResourceRequestsGPU: 2,
-				// Fake resource quota sets CPU to a milli value (decimal) on Status.Hard, so it's rounded up to 5.
-				corev1.ResourceRequestsCPU:    5,
+				ResourceRequestsGPU:           2,
+				corev1.ResourceRequestsCPU:    4500,
 				corev1.ResourceRequestsMemory: (16*1024 + 256) * 1024 * 1024, // bytes
 			},
 			wantErr: false,
@@ -106,7 +105,7 @@ func TestClient_Quota(t *testing.T) {
 			},
 			args: args{namespace: "foo123"},
 			want: resource.Quota{
-				CPU:     resource.Summary{Max: 4500, Used: 2250},
+				CPU:     resource.Summary{Max: 4500000, Used: 2250000},
 				GPU:     resource.Summary{Max: 2, Used: 1},
 				Memory:  resource.Summary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
 				Storage: 500 * 1024 * 1024 * 1024,

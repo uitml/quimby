@@ -93,7 +93,7 @@ func TestPopulateList(t *testing.T) {
 					email:    "foo@bar.baz",
 					usertype: "admin",
 					ResourceQuota: resource.Quota{
-						CPU:     resource.Summary{Max: 4500, Used: 2250},
+						CPU:     resource.Summary{Max: 4500000, Used: 2250000},
 						GPU:     resource.Summary{Max: 2, Used: 1},
 						Memory:  resource.Summary{Max: (16*1024 + 256) * 1024 * 1024, Used: (16*1024 + 256) * 1024 * 512},
 						Storage: 500 * 1024 * 1024 * 1024,
