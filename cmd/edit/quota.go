@@ -1,21 +1,22 @@
 package edit
 
 import (
-	"io/ioutil"
-	"os"
-	"os/exec"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
+	"github.com/uitml/quimby/internal/resource"
 	"github.com/uitml/quimby/internal/user"
+	"github.com/uitml/quimby/internal/user/reader"
 	"github.com/uitml/quimby/internal/validate"
 	"gopkg.in/yaml.v2"
 )
 
 func NewQuotaCmd() *cobra.Command {
 	var quotaCmd = &cobra.Command{
-		Use:   "res",
+		Use:   "quota",
 		Short: "Edit a users resource quota.",
 		Args:  cobra.ExactArgs(1),
 
@@ -38,49 +39,60 @@ func RunQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ns, err := client.Namespace(username)
+	u, err := client.UserExists(username)
 	if err != nil {
 		return err
 	}
-	u := user.FromNamespace(*ns)
-	md := u.Metadata()
-	y, err := yaml.Marshal(md)
+	if !u {
+		return fmt.Errorf("user %s does not exist", username)
+	}
+
+	// Get current values
+	spec, err := client.Spec(username)
 	if err != nil {
 		return err
 	}
 
-	// First test: open a temporary file with VI and read the saved file.
-	tmp, err := ioutil.TempFile("", "")
-	if err != nil {
-		return err
-	}
-	defer tmp.Close()
-
-	_, err = tmp.Write(y)
-	if err != nil {
-		return err
+	// Selecting which values are allowed to be edited...
+	tmpspec := resource.Spec{
+		GPU:                 spec.GPU,
+		MaxMemoryPerJob:     spec.MaxMemoryPerJob,
+		DefaultMemoryPerJob: spec.DefaultMemoryPerJob,
 	}
 
-	// Open the file in VI and read the result
-	command := exec.Command("vi", tmp.Name())
-	command.Stdin = os.Stdin
-	command.Stdout = os.Stdout
-	err = command.Run()
+	// Edit values
+	s, err := yaml.Marshal(tmpspec)
 	if err != nil {
 		return err
 	}
-
-	// Process the file and apply the values
-	r, err := ioutil.ReadFile(tmp.Name())
+	es, err := cli.Editor(s)
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(r, md)
+	err = yaml.Unmarshal(es, spec)
 	if err != nil {
 		return err
 	}
 
-	err = client.ApplyMetaData(username, md.Fullname, md.Email, md.Usertype)
+	// Populate manifests
+	conf, err := cli.ParseConfig()
+	if err != nil {
+		return err
+	}
+
+	rdr := reader.Github{
+		Username: conf.GithubUser,
+		Token:    conf.GithubToken,
+		Repo:     conf.GithubRepo,
+	}
+	usrConf := user.Config{Username: username, Spec: spec}
+	k8sUser, err := user.GenerateConfig(conf.GithubConfigDir+"/default-user-quimby.yaml", &rdr, usrConf)
+	if err != nil {
+		return err
+	}
+
+	// Apply updates
+	err = client.Apply(username, k8sUser)
 
 	return err
 }

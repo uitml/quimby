@@ -56,7 +56,7 @@ func RunMeta(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = client.ApplyMetaData(username, md.Fullname, md.Email, md.Usertype)
+	err = client.ApplyMetadata(username, md.Fullname, md.Email, md.Usertype)
 
 	return err
 }

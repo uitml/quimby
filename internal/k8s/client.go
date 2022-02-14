@@ -10,11 +10,11 @@ import (
 type ResourceClient interface {
 	NamespaceList() (*corev1.NamespaceList, error)
 	Quota(string) (resource.Quota, error)
+	Spec(string) (*resource.Spec, error)
 	DefaultRequest(string) (resource.Request, error)
 	Namespace(string) (*corev1.Namespace, error)
-	NewUser(string, string, string, string) error
-	ApplyMetaData(string, string, string, string) error
-	NewSimpleUser(string) error
+	ApplyMetadata(string, string, string, string) error
+	Apply(string, []byte) error
 	TotalGPUs() (resource.Summary, error)
 	UserExists(string) (bool, error)
 	DeleteUser(string) error

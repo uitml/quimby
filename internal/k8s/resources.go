@@ -3,10 +3,11 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/openlyinc/pointy"
 	"github.com/uitml/quimby/internal/resource"
 	corev1 "k8s.io/api/core/v1"
-	apiresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,6 +25,11 @@ func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName
 
 		if !ok {
 			return nil, fmt.Errorf("in resourceAsInt64: Resource %v does not exist", name)
+		}
+		if strings.Contains(string(name), "cpu") {
+			// use millivalue
+			result[name] = res.MilliValue()
+			continue
 		}
 		val, ok := res.AsInt64()
 
@@ -102,6 +108,98 @@ func (c *Client) Quota(namespace string) (resource.Quota, error) {
 	return rq, nil
 }
 
+func (c *Client) Spec(namespace string) (*resource.Spec, error) {
+	// Compute
+	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user exists
+	if len(res.Items) == 0 {
+		return nil, fmt.Errorf("user %s has no resources or does not exist", namespace)
+	}
+
+	// Limits
+	lim, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Storage
+	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// storage-proxy
+	dpl, err := c.Clientset.AppsV1().Deployments(namespace).Get(context.TODO(), "storage-proxy", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert all resources to Int64
+	maxResources, err := resourceAsInt64(
+		res.Items[0].Spec.Hard,
+		ResourceRequestsGPU,
+		corev1.ResourceRequestsCPU,
+		corev1.ResourceRequestsMemory,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defaultLimits, err := resourceAsInt64(
+		lim.Items[0].Spec.Limits[0].Default,
+		corev1.ResourceCPU,
+		corev1.ResourceMemory,
+		ResourceGPU,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	storage, err := resourceAsInt64(
+		pvc.Items[0].Spec.Resources.Requests,
+		corev1.ResourceStorage,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	proxy, err := resourceAsInt64(
+		dpl.Spec.Template.Spec.Containers[0].Resources.Limits,
+		corev1.ResourceCPU,
+		corev1.ResourceMemory,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	proxyrequest, err := resourceAsInt64(
+		dpl.Spec.Template.Spec.Containers[0].Resources.Requests,
+		corev1.ResourceCPU,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// This is a hot mess
+	result := resource.Spec{
+		GPU:                    pointy.Int64(maxResources[ResourceRequestsGPU]),
+		GPUPerJob:              pointy.Int64(defaultLimits[ResourceGPU]),
+		MaxMemoryPerJob:        pointy.Int64(maxResources[corev1.ResourceRequestsMemory] / 1024 / 1024 / 1024 / maxResources[ResourceRequestsGPU]), // in GiB
+		DefaultMemoryPerJob:    pointy.Int64(defaultLimits[corev1.ResourceMemory] / 1024 / 1024 / 1024),                                            // in GiB
+		CPUPerJob:              pointy.Int64(defaultLimits[corev1.ResourceCPU] / 1000),                                                             // not milli
+		StorageProxyCPURequest: pointy.Int64(proxyrequest[corev1.ResourceCPU]),                                                                     // milli
+		StorageProxyCPULimit:   pointy.Int64(proxy[corev1.ResourceCPU]),                                                                            // milli
+		StorageProxyMemory:     pointy.Int64(proxy[corev1.ResourceMemory] / 1024 / 1024),                                                           // in MB
+		StorageSize:            pointy.Int64(storage[corev1.ResourceStorage] / 1024 / 1024 / 1024),                                                 // in GiB
+	}
+
+	return &result, nil
+}
+
 func (c *Client) DefaultRequest(namespace string) (resource.Request, error) {
 	res, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -147,46 +245,4 @@ func (c *Client) TotalGPUs() (resource.Summary, error) {
 	}
 
 	return resource.Summary{Max: totalGPUs, Used: usedGPUs}, nil
-}
-
-func NewResourceQuota(namespace string, cpu int64, gpu int64, memory int64) *corev1.ResourceQuota {
-	quota := corev1.ResourceQuota{
-		TypeMeta: metav1.TypeMeta{Kind: "ResourceQuota", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "compute-resources",
-			Namespace: namespace,
-		},
-		Spec: corev1.ResourceQuotaSpec{
-			Hard: map[corev1.ResourceName]apiresource.Quantity{
-				corev1.ResourceRequestsCPU:    *apiresource.NewQuantity(cpu, apiresource.DecimalSI),
-				ResourceRequestsGPU:           *apiresource.NewQuantity(gpu, apiresource.DecimalSI),
-				corev1.ResourceRequestsMemory: *apiresource.NewQuantity((memory*1024+256)*1024*1024, apiresource.BinarySI),
-			},
-		},
-	}
-
-	return &quota
-}
-
-func NewPVC(namespace string, size int64) *corev1.PersistentVolumeClaim {
-	storageClass := "nfs-storage"
-	quota := corev1.PersistentVolumeClaim{
-		TypeMeta:   metav1.TypeMeta{Kind: "PersistentVolumeClaim", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{Name: "storage", Namespace: namespace},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{"ReadWriteMany"},
-			Resources: corev1.ResourceRequirements{
-				Requests: map[corev1.ResourceName]apiresource.Quantity{
-					corev1.ResourceStorage: *apiresource.NewQuantity(
-						size*1024*1024*1024,
-						apiresource.BinarySI,
-					),
-				},
-			},
-			VolumeName:       "storage",
-			StorageClassName: &storageClass,
-		},
-	}
-
-	return &quota
 }

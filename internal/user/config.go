@@ -2,7 +2,6 @@ package user
 
 import (
 	"bytes"
-	"fmt"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -18,9 +17,9 @@ type Config struct {
 }
 
 type Metadata struct {
-	Fullname string `yaml:"fullname,omitempty"`
-	Email    string `yaml:"email,omitempty"`
-	Usertype string `yaml:"usertype,omitempty"`
+	Fullname string `yaml:"fullname"`
+	Email    string `yaml:"email"`
+	Usertype string `yaml:"usertype"`
 }
 
 // Populates usr given a path to a yaml file using the Reader
@@ -29,7 +28,7 @@ func (usr *Config) Populate(path string, rdr reader.Config) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(body))
+
 	err = yaml.Unmarshal(body, usr)
 	if err != nil {
 		return err

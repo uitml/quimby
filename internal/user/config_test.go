@@ -34,7 +34,8 @@ func TestUser_Populate(t *testing.T) {
 				Spec: &resource.Spec{
 					GPU:                    pointy.Int64(2),
 					GPUPerJob:              pointy.Int64(1),
-					MemoryPerJob:           pointy.Int64(16),
+					MaxMemoryPerJob:        pointy.Int64(16),
+					DefaultMemoryPerJob:    pointy.Int64(12),
 					CPUPerJob:              pointy.Int64(2),
 					StorageProxyCPURequest: pointy.Int64(200),
 					StorageProxyCPULimit:   pointy.Int64(500),
@@ -98,7 +99,8 @@ func TestGenerateConfig(t *testing.T) {
 					Spec: &resource.Spec{
 						GPU:                    pointy.Int64(2),
 						GPUPerJob:              pointy.Int64(1),
-						MemoryPerJob:           pointy.Int64(16),
+						MaxMemoryPerJob:        pointy.Int64(16),
+						DefaultMemoryPerJob:    pointy.Int64(12),
 						CPUPerJob:              pointy.Int64(2),
 						StorageProxyCPURequest: pointy.Int64(200),
 						StorageProxyCPULimit:   pointy.Int64(500),
@@ -121,7 +123,8 @@ func TestGenerateConfig(t *testing.T) {
 					Spec: &resource.Spec{
 						GPU:                    pointy.Int64(2),
 						GPUPerJob:              pointy.Int64(1),
-						MemoryPerJob:           pointy.Int64(16),
+						MaxMemoryPerJob:        pointy.Int64(16),
+						DefaultMemoryPerJob:    pointy.Int64(12),
 						CPUPerJob:              pointy.Int64(2),
 						StorageProxyCPURequest: pointy.Int64(200),
 						StorageProxyCPULimit:   pointy.Int64(500),

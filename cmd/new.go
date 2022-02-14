@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/uitml/quimby/internal/cli"
 	"github.com/uitml/quimby/internal/k8s"
@@ -24,25 +23,13 @@ func newCreateCmd() *cobra.Command {
 		Short: "Create a new Springfield user.",
 		Args:  cobra.ExactArgs(1),
 
-		RunE: RunGetDefault,
+		RunE: RunNew,
 	}
 
 	return createCmd
 }
 
-func RunCreate(cmd *cobra.Command, args []string) error {
-	client, err := k8s.NewClient()
-
-	if err != nil {
-		return err
-	}
-
-	err = client.NewSimpleUser(args[0])
-
-	return err
-}
-
-func RunGetDefault(cmd *cobra.Command, args []string) error {
+func RunNew(cmd *cobra.Command, args []string) error {
 	username := args[0]
 	if !validate.Username(username) {
 		return fmt.Errorf("invalid username: %s", username)
@@ -71,23 +58,11 @@ func RunGetDefault(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Instead of reading each section, interpreting them, populating k8s structs and applying the correct one...
-	// pipe into kubectl apply -f -
-	command := exec.Command("kubectl", "apply", "-f", "-")
-
-	stdin, err := command.StdinPipe()
+	client, err := k8s.NewClient()
 	if err != nil {
 		return err
 	}
-	if err := command.Start(); err != nil {
-		return err
-	}
-	defer stdin.Close()
-
-	_, err = stdin.Write(k8sUser)
-	if err != nil {
-		return err
-	}
+	client.Apply(username, k8sUser)
 
 	return nil
 }

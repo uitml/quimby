@@ -3,7 +3,8 @@ package resource
 type Spec struct {
 	GPU                    *int64 `yaml:"gpu,omitempty"`
 	GPUPerJob              *int64 `yaml:"gpuperjob,omitempty"`
-	MemoryPerJob           *int64 `yaml:"memoryperjob,omitempty"`
+	MaxMemoryPerJob        *int64 `yaml:"maxmemoryperjob,omitempty"`
+	DefaultMemoryPerJob    *int64 `yaml:"defaultmemoryperjob,omitempty"`
 	CPUPerJob              *int64 `yaml:"cpuperjob,omitempty"`
 	StorageProxyCPURequest *int64 `yaml:"storageproxycpurequest,omitempty"`
 	StorageProxyCPULimit   *int64 `yaml:"storageproxycpulimit,omitempty"`

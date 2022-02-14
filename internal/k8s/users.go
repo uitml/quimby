@@ -2,13 +2,11 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	"github.com/openlyinc/pointy"
 	"github.com/uitml/quimby/internal/validate"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
@@ -45,32 +43,6 @@ func (c *Client) Namespace(username string) (*corev1.Namespace, error) {
 
 }
 
-func (c *Client) NewUser(username string, fullname string, email string, userType string) error {
-	if !validate.Username(username) {
-		return errors.New("invalid username. Username must be on the form xyz123")
-	}
-
-	labels := map[string]string{LabelUserType: validate.DefaultIfEmpty(userType, "student")}
-	annotations := map[string]string{AnnotationUserFullname: fullname, AnnotationUserEmail: email}
-
-	ns := NewNamespace(username, labels, annotations)
-
-	// Create namespace
-	_, err := c.Clientset.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-
-	// Resources
-
-	// Resource Limits
-
-	// Storage
-
-	return err
-}
-
-func (c *Client) NewSimpleUser(username string) error {
-	return c.NewUser(username, "", "", "")
-}
-
 func NewNamespace(name string, labels map[string]string, annotations map[string]string) *corev1.Namespace {
 	ns := corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
@@ -84,70 +56,6 @@ func NewNamespace(name string, labels map[string]string, annotations map[string]
 	}
 
 	return &ns
-}
-
-func newRoleBinding(username string) *rbacv1.RoleBinding {
-	rb := rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "owner",
-			Namespace: username,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:     "User",
-				APIGroup: "rbac.authorization.k8s.io",
-				Name:     username,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "springfield:namespace-owner",
-		},
-	}
-
-	return &rb
-}
-
-func newLimitRange(username string, defaultCPU string, defaultMemory string, defaultGPU int64) (*corev1.LimitRange, error) {
-	rCPU, err := resource.ParseQuantity(defaultCPU)
-	if err != nil {
-		return nil, err
-	}
-
-	rMemory, err := resource.ParseQuantity(defaultMemory)
-	if err != nil {
-		return nil, err
-	}
-
-	lr := corev1.LimitRange{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "LimitRange",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "default-resources",
-			Namespace: username,
-		},
-		Spec: corev1.LimitRangeSpec{
-			Limits: []corev1.LimitRangeItem{
-				{
-					Type: corev1.LimitTypeContainer,
-					Default: corev1.ResourceList{
-						corev1.ResourceCPU:    rCPU,
-						corev1.ResourceMemory: rMemory,
-						ResourceGPU:           *resource.NewQuantity(defaultGPU, resource.DecimalSI),
-					},
-				},
-			},
-		},
-	}
-
-	return &lr, nil
 }
 
 func (c *Client) UserExists(u string) (bool, error) {
@@ -166,9 +74,8 @@ func (c *Client) UserExists(u string) (bool, error) {
 }
 
 func (c *Client) DeleteUser(u string) error {
-	gracePeriod := int64(0)
 	policy := metav1.DeletePropagationForeground
-	opts := metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod, PropagationPolicy: &policy}
+	opts := metav1.DeleteOptions{GracePeriodSeconds: pointy.Int64(0), PropagationPolicy: &policy}
 
 	err := c.Clientset.CoreV1().Namespaces().Delete(context.TODO(), u, opts)
 	if err != nil {
@@ -177,7 +84,7 @@ func (c *Client) DeleteUser(u string) error {
 	return nil
 }
 
-func (c *Client) ApplyMetaData(namespace string, fullName string, email string, userType string) error {
+func (c *Client) ApplyMetadata(namespace string, fullName string, email string, userType string) error {
 	kind := "Namespace"
 	apiVersion := "v1"
 

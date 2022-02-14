@@ -1,7 +1,8 @@
 resourcespec:
   gpu: 2
   gpuperjob: 1
-  memoryperjob: 16
+  maxmemoryperjob: 16
+  defaultmemoryperjob: 12
   cpuperjob: 2
   storageproxycpurequest: 200
   storageproxycpulimit: 500
