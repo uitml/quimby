@@ -7,7 +7,7 @@ import (
 )
 
 func Editor(in []byte) ([]byte, error) {
-	// First test: open a temporary file with VI and read the saved file.
+	// Open a temporary file with VI and read the saved file.
 	tmp, err := ioutil.TempFile("", "")
 	if err != nil {
 		return nil, err
@@ -19,7 +19,6 @@ func Editor(in []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Open the file in VI and read the result
 	command := exec.Command("vi", tmp.Name())
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
@@ -28,7 +27,7 @@ func Editor(in []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Process the file and apply the values
+	// Process the file and return the values
 	res, err := ioutil.ReadFile(tmp.Name())
 	if err != nil {
 		return nil, err

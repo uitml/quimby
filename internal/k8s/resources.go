@@ -7,6 +7,7 @@ import (
 
 	"github.com/openlyinc/pointy"
 	"github.com/uitml/quimby/internal/resource"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,25 +45,20 @@ func resourceAsInt64(resources corev1.ResourceList, names ...corev1.ResourceName
 
 func (c *Client) Quota(namespace string) (resource.Quota, error) {
 	// Compute
-	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
+	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).Get(context.TODO(), "compute-resources", metav1.GetOptions{})
 	if err != nil {
 		return resource.Quota{}, err
 	}
 
-	// Check if user exists
-	if len(res.Items) == 0 {
-		return resource.Quota{}, fmt.Errorf("user %s has no resources or does not exist", namespace)
-	}
-
 	// Storage
-	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), metav1.ListOptions{})
+	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), "storage", metav1.GetOptions{})
 	if err != nil {
 		return resource.Quota{}, err
 	}
 
 	// Convert all resources to Int64
 	maxResources, err := resourceAsInt64(
-		res.Items[0].Spec.Hard,
+		res.Spec.Hard,
 		ResourceRequestsGPU,
 		corev1.ResourceRequestsCPU,
 		corev1.ResourceRequestsMemory,
@@ -72,7 +68,7 @@ func (c *Client) Quota(namespace string) (resource.Quota, error) {
 	}
 
 	usedResources, err := resourceAsInt64(
-		res.Items[0].Status.Used,
+		res.Status.Used,
 		ResourceRequestsGPU,
 		corev1.ResourceRequestsCPU,
 		corev1.ResourceRequestsMemory,
@@ -82,7 +78,7 @@ func (c *Client) Quota(namespace string) (resource.Quota, error) {
 	}
 
 	storage, err := resourceAsInt64(
-		pvc.Items[0].Spec.Resources.Requests,
+		pvc.Spec.Resources.Requests,
 		corev1.ResourceStorage,
 	)
 	if err != nil {
@@ -109,79 +105,110 @@ func (c *Client) Quota(namespace string) (resource.Quota, error) {
 }
 
 func (c *Client) Spec(namespace string) (*resource.Spec, error) {
-	// Compute
-	res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
+	errchan := make(chan error)
 
-	// Check if user exists
-	if len(res.Items) == 0 {
-		return nil, fmt.Errorf("user %s has no resources or does not exist", namespace)
-	}
+	// Compute
+	reschan := make(chan *corev1.ResourceQuota)
+	go func() {
+		res, err := c.Clientset.CoreV1().ResourceQuotas(namespace).Get(context.TODO(), "compute-resources", metav1.GetOptions{})
+		if err != nil {
+			errchan <- err
+		}
+		reschan <- res
+	}()
 
 	// Limits
-	lim, err := c.Clientset.CoreV1().LimitRanges(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
+	limchan := make(chan *corev1.LimitRange)
+	go func() {
+		lim, err := c.Clientset.CoreV1().LimitRanges(namespace).Get(context.TODO(), "default-resources", metav1.GetOptions{})
+		if err != nil {
+			errchan <- err
+		}
+		limchan <- lim
+	}()
 
 	// Storage
-	pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
+	pvcchan := make(chan *corev1.PersistentVolumeClaim)
+	go func() {
+		pvc, err := c.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), "storage", metav1.GetOptions{})
+		if err != nil {
+			errchan <- err
+		}
+		pvcchan <- pvc
+	}()
 
 	// storage-proxy
-	dpl, err := c.Clientset.AppsV1().Deployments(namespace).Get(context.TODO(), "storage-proxy", metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
+	proxychan := make(chan *appsv1.Deployment)
+	go func() {
+		dpl, err := c.Clientset.AppsV1().Deployments(namespace).Get(context.TODO(), "storage-proxy", metav1.GetOptions{})
+		if err != nil {
+			errchan <- err
+		}
+		proxychan <- dpl
+	}()
 
-	// Convert all resources to Int64
-	maxResources, err := resourceAsInt64(
-		res.Items[0].Spec.Hard,
-		ResourceRequestsGPU,
-		corev1.ResourceRequestsCPU,
-		corev1.ResourceRequestsMemory,
-	)
-	if err != nil {
-		return nil, err
-	}
+	var maxResources, defaultLimits, storage, proxy, proxyrequest map[corev1.ResourceName]int64
+	var err error
+	// Receive and convert all resources to Int64
+	for i := 0; i < 4; i++ {
+		select {
+		case res := <-reschan:
+			maxResources, err = resourceAsInt64(
+				res.Spec.Hard,
+				ResourceRequestsGPU,
+				corev1.ResourceRequestsCPU,
+				corev1.ResourceRequestsMemory,
+			)
+			if err != nil {
+				return nil, err
+			}
 
-	defaultLimits, err := resourceAsInt64(
-		lim.Items[0].Spec.Limits[0].Default,
-		corev1.ResourceCPU,
-		corev1.ResourceMemory,
-		ResourceGPU,
-	)
-	if err != nil {
-		return nil, err
-	}
+			continue
+		case lim := <-limchan:
+			defaultLimits, err = resourceAsInt64(
+				lim.Spec.Limits[0].Default,
+				corev1.ResourceCPU,
+				corev1.ResourceMemory,
+				ResourceGPU,
+			)
+			if err != nil {
+				return nil, err
+			}
 
-	storage, err := resourceAsInt64(
-		pvc.Items[0].Spec.Resources.Requests,
-		corev1.ResourceStorage,
-	)
-	if err != nil {
-		return nil, err
-	}
+			continue
+		case pvc := <-pvcchan:
+			storage, err = resourceAsInt64(
+				pvc.Spec.Resources.Requests,
+				corev1.ResourceStorage,
+			)
+			if err != nil {
+				return nil, err
+			}
 
-	proxy, err := resourceAsInt64(
-		dpl.Spec.Template.Spec.Containers[0].Resources.Limits,
-		corev1.ResourceCPU,
-		corev1.ResourceMemory,
-	)
-	if err != nil {
-		return nil, err
-	}
+			continue
+		case dpl := <-proxychan:
+			proxy, err = resourceAsInt64(
+				dpl.Spec.Template.Spec.Containers[0].Resources.Limits,
+				corev1.ResourceCPU,
+				corev1.ResourceMemory,
+			)
+			if err != nil {
+				return nil, err
+			}
 
-	proxyrequest, err := resourceAsInt64(
-		dpl.Spec.Template.Spec.Containers[0].Resources.Requests,
-		corev1.ResourceCPU,
-	)
-	if err != nil {
-		return nil, err
+			proxyrequest, err = resourceAsInt64(
+				dpl.Spec.Template.Spec.Containers[0].Resources.Requests,
+				corev1.ResourceCPU,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			continue
+		case err := <-errchan:
+			close(errchan)
+			return nil, err
+		}
 	}
 
 	// This is a hot mess
@@ -236,9 +263,23 @@ func (c *Client) TotalGPUs() (resource.Summary, error) {
 	}
 
 	for _, node := range nodes.Items {
+		var nodeReady bool = true
+		for _, condition := range node.Status.Conditions {
+			if condition.Type != corev1.NodeReady {
+				continue
+			}
+			if condition.Status != corev1.ConditionTrue {
+				nodeReady = false
+			}
+			break
+		}
+		if !nodeReady {
+			continue
+		}
 		if node.Spec.Unschedulable {
 			continue
 		}
+
 		// Ignoring errors here since some nodes might not have all resources
 		g, _ := resourceAsInt64(node.Status.Capacity, ResourceGPU)
 		totalGPUs += g[ResourceGPU]

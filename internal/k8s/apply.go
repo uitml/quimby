@@ -37,37 +37,37 @@ func (c *Client) Apply(namespace string, manifest []byte) error {
 
 	// Configure patches
 	for _, m := range res {
-		if strings.Contains(string(m), "Namespace") {
+		if strings.Contains(string(m), "kind: Namespace") {
 			err := c.applyNamespace(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "RoleBinding") {
+		} else if strings.Contains(string(m), "kind: RoleBinding") {
 			err := c.applyRoleBinding(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "ResourceQuota") {
+		} else if strings.Contains(string(m), "kind: ResourceQuota") {
 			err := c.applyResourceQuota(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "LimitRange") {
+		} else if strings.Contains(string(m), "kind: LimitRange") {
 			err := c.applyLimitRange(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "PersistentVolumeClaim") {
+		} else if strings.Contains(string(m), "kind: PersistentVolumeClaim") {
 			err := c.applyPersistentVolumeClaim(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "Deployment") {
+		} else if strings.Contains(string(m), "kind: Deployment") {
 			err := c.applyDeployment(namespace, m)
 			if err != nil {
 				return err
 			}
-		} else if strings.Contains(string(m), "Service") {
+		} else if strings.Contains(string(m), "kind: Service") {
 			err := c.applyService(namespace, m)
 			if err != nil {
 				return err
