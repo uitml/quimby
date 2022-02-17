@@ -54,14 +54,14 @@ func RunQuota(cmd *cobra.Command, args []string) error {
 	}
 
 	// Selecting which values are allowed to be edited...
-	tmpspec := resource.Spec{
+	tmpSpec := resource.Spec{
 		GPU:                 spec.GPU,
 		MaxMemoryPerJob:     spec.MaxMemoryPerJob,
 		DefaultMemoryPerJob: spec.DefaultMemoryPerJob,
 	}
 
 	// Edit values
-	s, err := yaml.Marshal(tmpspec)
+	s, err := yaml.Marshal(tmpSpec)
 	if err != nil {
 		return err
 	}

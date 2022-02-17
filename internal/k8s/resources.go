@@ -263,9 +263,23 @@ func (c *Client) TotalGPUs() (resource.Summary, error) {
 	}
 
 	for _, node := range nodes.Items {
+		var nodeReady bool = true
+		for _, condition := range node.Status.Conditions {
+			if condition.Type != corev1.NodeReady {
+				continue
+			}
+			if condition.Status != corev1.ConditionTrue {
+				nodeReady = false
+			}
+			break
+		}
+		if !nodeReady {
+			continue
+		}
 		if node.Spec.Unschedulable {
 			continue
 		}
+
 		// Ignoring errors here since some nodes might not have all resources
 		g, _ := resourceAsInt64(node.Status.Capacity, ResourceGPU)
 		totalGPUs += g[ResourceGPU]
